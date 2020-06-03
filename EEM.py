@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from decimal import Decimal as dec
 import numpy as np
 import math
+import sys
 
 
 class EEM(ABC):
@@ -58,12 +59,12 @@ class EEM(ABC):
 
 			# print('{}\n{}\n\n'.format(X, Y))
 			# print('res = \n{}'.format(res[:-1]))
+			# sys.exit(1)
 
 			for i in range(len(cg)):
 				idx = cg[i]
 				atom = atoms[idx]
 				atom.curChg = dec(res[i, 0])
-				# print(idx, atom.curChg)
 
 			# use only 3 digits for charge
 			qtot = dec(0.0)
@@ -72,7 +73,6 @@ class EEM(ABC):
 
 			for idx in cg:
 				atoms[idx].curChg -= qtot / nAtoms
-				# print(idx, atoms[idx].curChg)
 
 			for idx in cg:
 				atoms[idx].curChg = dec(int(atoms[idx].curChg * dec(1000.0)) / dec(1000.0))
@@ -91,13 +91,13 @@ class EEM(ABC):
 		dist = 0.0
 
 		# check if iac2 is second neighbor of iac1
-		if atom1.isNrmNB(atom2.iac):
-			dist = atom1.getNrmBndDist(atom2.iac)
+		if atom1.isNrmNB(atom2.idx):
+			dist = atom1.getNrmBndDist(atom2.idx)
 
 		# otherwise use distance as thrid neighbor
 		else:
-			if atom1.isNeiNB(atom2.iac):
-				dist = atom1.getNrmBndDist(atom2.iac)
+			if atom1.isNeiNB(atom2.idx):
+				dist = atom1.getNeiBndDist(atom2.idx)
 			else:
 				return 0.0
 
@@ -138,6 +138,7 @@ class AA_Alk(EEM):
 							CGs[i].append(idx1)
 		mol.CGs = CGs
 		# print(CGs)
+
 
 
 

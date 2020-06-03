@@ -252,7 +252,6 @@ def readListAtom(conf, molecules, fileName):
 				molecules[cod].addAtom(atom, conf)
 
 	molecules_utils.checkAtoms(molecules)
-	molecules_utils.createLJPairs(molecules)
 
 
 def readRefBondAndAngle(fileName):
@@ -327,14 +326,15 @@ def readListAngle(ang, molecules, fileName):
 				atm1 = molecules[cod].getAtom(idx1)
 				atm2 = molecules[cod].getAtom(idx2)
 				atm3 = molecules[cod].getAtom(idx3)
-				if (not atm1.ignore) and (atm2.ignore) and (not atm3.ignore):
+
+				if (atm1.ignore == False) and (atm2.ignore == False) and (atm2.ignore == False):
 					if (not atm1.isNrmNB(idx2)) and (not atm3.isNrmNB(idx2)):
 						sys.exit('{} is not the central atom'.format(atm2.nam))
 
 					d1 = atm1.getNrmBndDist(idx2)
 					d3 = atm3.getNrmBndDist(idx2)
+					theta = float(theta)
 					dist = math.sqrt(d1 * d1 + d3 * d3 - 2 * d1 * d3 * math.cos(math.radians(theta)))
-					# dist = math.sqrt(d1 * d1 + d3 * d3 - 2 * d1 * d3 * math.cos(theta))
 
 					atm1.addBndNei(idx3, dist)
 					atm3.addBndNei(idx1, dist)

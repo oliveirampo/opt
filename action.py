@@ -22,6 +22,7 @@ class Action:
 		IO.readSymmetry(atomTypes, "eps", conf.symEpsFile)
 
 		molecules_utils.setCG(molecules, conf.eem)
+		molecules_utils.createEffectivePrms(molecules, conf.eem)
 
 		return molecules, atomTypes
 

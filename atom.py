@@ -1,3 +1,6 @@
+import sys
+
+
 class Atom:
 	def __init__(self, idx, nam, iac, chg):
 		self._idx = int(idx)
@@ -9,7 +12,10 @@ class Atom:
 		self._bnd_nei = {}
 		self._ignore = False
 
-	
+	def __str__(self):
+		s = '{:3} {:3} {} {}'.format(self._idx, self._iac, self._nam, self._bnd_nrm)
+		return s
+
 	@property
 	def idx(self):
 		return self._idx
@@ -55,6 +61,7 @@ class Atom:
 
 	def isNrmNB(self, idx):
 		idx = int(idx)
+		# print('{} {} {}'.format(idx, self._idx, self._bnd_nrm))
 		if idx in self._bnd_nrm:
 			return True
 		return False
@@ -67,11 +74,11 @@ class Atom:
 
 	def getNrmBndDist(self, idx):
 		idx = int(idx)
-		return self._bnd_nrm(idx)
+		return self._bnd_nrm[idx]
 
 	def getNeiBndDist(self, idx):
 		idx = int(idx)
-		return self._bnd_nei(idx)
+		return self._bnd_nei[idx]
 
 
 	
