@@ -5,17 +5,21 @@ def checkAtoms(molecules):
 		molecules[cod].checkAtoms()
 
 
-def setCG(molecules, eem):
-	for cod in molecules:
-		eem.setCG(molecules[cod])
-
-
 def computeEEM(eem, molecules, atomTypes):
 	for cod in molecules:
-		eem.computeEEM(molecules[cod], atomTypes)
+		mol = molecules[cod]
+		atoms = mol.atoms
+
+		for prm in mol.parameters:
+			prm.computeEEM(eem, atomTypes, atoms)
 
 
-def createEffectivePrms(molecules, eem):
+def createEffectivePrms(atomTypes, molecules, eem, matrix):
 	for cod in molecules:
 		mol = molecules[cod]
-		mol.createEffectivePrms(eem)
+		eem.setCG(molecules[cod])
+		mol.createEffectivePrms(atomTypes, eem, matrix)
+
+
+
+

@@ -1,7 +1,9 @@
 import sys
 
 
-from effectivePrm import EffectivePrm
+from effectiveParameter import C6
+from effectiveParameter import C12
+import parameter_utils
 
 
 class Molecule:
@@ -20,8 +22,8 @@ class Molecule:
 		self._eps_ref = float(eps_ref)
 
 		self._atoms = {}
-		self._LJPairs = []
 		self._CGs = []
+		self._parameters = []
 
 	@property
 	def bondListFile(self):
@@ -67,8 +69,8 @@ class Molecule:
 	def atoms(self):
 		return self._atoms
 	@property
-	def LJPairs(self):
-		return self._LJPairs
+	def parameters(self):
+		return self._parameters
 
 	@property
 	def CGs(self):
@@ -97,10 +99,13 @@ class Molecule:
 		if len(self._atoms) == 0:
 			sys.exit('No atoms were found for {}'.format(self._cod))
 
-	def createEffectivePrms(self, eem):
-		self.createLJPairs()
+	def nAtoms(self):
+		return len(self._atoms)
 
-	def createLJPairs(self):
+	def createEffectivePrms(self, atomTypes, eem, matrix):
+		self.createLJPairs(atomTypes, eem, matrix)
+
+	def createLJPairs(self, atomTypes, eem, matrix):
 		iacList = []
 		for idx in self._atoms:
 			iac = self._atoms[idx].iac
@@ -115,11 +120,34 @@ class Molecule:
 				iac1 = iacList[i]
 				iac2 = iacList[j]
 				pairs.append([iac1, iac2])
-		print(pairs)
-		print('\n\tHERE')
-		sys.exit(666)
+
+		nAtoms = self.nAtoms()
+		idx = nAtoms + 1
+
+		for i in range(len(pairs)):
+			pair = pairs[i]
+			iac1 = pair[0]
+			iac2 = pair[1]
+
+			typ1 = parameter_utils.getType(iac1, atomTypes)
+			typ2 = parameter_utils.getType(iac2, atomTypes)
+
+			c6_nrm = C6(idx, 'NRM', iac1, iac2, typ1, typ2, 0.0)
+			self._parameters.append(c6_nrm)
+			idx += 1
+			c6_nei = C6(idx, 'NEI', iac1, iac2, typ1, typ2, 0.0)
+			self._parameters.append(c6_nei)
+			idx += 1
+			c12_nrm = C12(idx, 'NRM', iac1, iac2, typ1, typ2, 0.0)
+			self._parameters.append(c12_nrm)
+			idx += 1
+			c12_nei = C12(idx, 'NEI', iac1, iac2, typ1, typ2, 0.0)
+			self._parameters.append(c12_nei)
+			idx += 1
 
 
+	def addParameter(self, prm):
+		self._parameters.append(prm)
 
 	def writePrmMod(self, f):
 		# write charges
@@ -130,5 +158,6 @@ class Molecule:
 			.format(idx, 'CHG_ATM', 1, idx, 'MOLEC', atom.nam, 0.0, atom.curChg))
 
 		# write LJ
-		print(self._LJPairs)
+		for prm in self._parameters:
+			prm.writePrm(f)
 

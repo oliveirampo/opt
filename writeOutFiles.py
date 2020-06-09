@@ -36,7 +36,7 @@ def writeSam(it, molecules):
 
         samFile.close()
 
-def writeParamMod(it, atomTypes, molecules):
+def writeParamMod(it, molecules):
     prmDir = 'prm_{}'.format(it)
     if not os.path.exists(prmDir):
         os.makedirs(prmDir)

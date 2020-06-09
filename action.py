@@ -21,8 +21,7 @@ class Action:
 		IO.readSymmetry(atomTypes, "sig", conf.symSigFile)
 		IO.readSymmetry(atomTypes, "eps", conf.symEpsFile)
 
-		molecules_utils.setCG(molecules, conf.eem)
-		molecules_utils.createEffectivePrms(molecules, conf.eem)
+		molecules_utils.createEffectivePrms(atomTypes, molecules, conf.eem, matrix)
 
 		return molecules, atomTypes
 
@@ -38,10 +37,9 @@ class Gen(Action):
 		writeOutFiles.writeSam(self.it, molecules)
 
 		molecules_utils.computeEEM(conf.eem, molecules, atomTypes)
+		print('TODO: computeLJ')
 
-		writeOutFiles.writeParamMod(self.it, atomTypes, molecules)
-
-
+		writeOutFiles.writeParamMod(self.it, molecules)
 
 
 class Ana(Action):

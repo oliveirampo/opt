@@ -5,6 +5,9 @@ import math
 import sys
 
 
+from effectiveParameter import chgCG
+
+
 class EEM(ABC):
 	def setCG(self, mol):
 		mol.CGs = []
@@ -15,76 +18,72 @@ class EEM(ABC):
 		pass
 
 
-	def computeEEM(self, mol, atomTypes):
-		CGs = mol.CGs
-		atoms = mol.atoms
+	def computeEEM(self, atomTypes, cg, atoms):
+		nAtoms = len(cg)
+		X = np.empty((nAtoms + 1, nAtoms + 1,))
+		X[:] = np.zeros(nAtoms + 1)
+		Y = np.empty((nAtoms + 1, 1,))
 
-		for cg in CGs:
-			nAtoms = len(cg)
-			X = np.empty((nAtoms + 1, nAtoms + 1,))
-			X[:] = np.zeros(nAtoms + 1)
-			Y = np.empty((nAtoms + 1, 1,))
+		for i in range(len(cg)):
+			idx1 = cg[i]
+			atom1 = atoms[idx1]
+			iac1 = atom1.iac
 
-			for i in range(len(cg)):
-				idx1 = cg[i]
-				atom1 = atoms[idx1]
-				iac1 = atom1.iac
+			atomType1 = atomTypes[iac1]
+			hrd1 = atomType1.hrd.cur
+			eln1 = atomType1.eln.cur
+			sig1 = atomType1.sig.cur
 
-				atomType1 = atomTypes[iac1]
-				hrd1 = atomType1.hrd.cur
-				eln1 = atomType1.eln.cur
-				sig1 = atomType1.sig.cur
+			X[i, i] = hrd1
+			Y[i, 0] = -eln1
 
-				X[i, i] = hrd1
-				Y[i, 0] = -eln1
+			for j in range(i + 1, len(cg)):
+				idx2 = cg[j]
+				atom2 = atoms[idx2]
+				iac2 = atom2.iac
 
-				for j in range(i + 1, len(cg)):
-					idx2 = cg[j]
-					atom2 = atoms[idx2]
-					iac2 = atom2.iac
+				atomType2 = atomTypes[iac2]
+				sig2 = atomType2.sig.cur
 
-					atomType2 = atomTypes[iac2]
-					sig2 = atomType2.sig.cur
+				coul = self.coulomb(atom1, atom2, sig1, sig2)
+				X[i, j] = coul
+				X[j, i] = coul
 
-					coul = self.coulomb(atom1, atom2, sig1, sig2)
-					X[i, j] = coul
-					X[j, i] = coul
+		for i in range(len(cg)):
+			X[nAtoms, i] = 1
+			X[i, nAtoms] = -1
 
-			for i in range(len(cg)):
-				X[nAtoms, i] = 1
-				X[i, nAtoms] = -1
+		res = np.linalg.solve(X, Y)
+		EEM_ene = res[nAtoms, 0]  # TODO: save somewhere
 
-			res = np.linalg.solve(X, Y)
-			EEM_ene = res[nAtoms, 0]  # TODO: save somewhere
+		# print('{}\n{}\n\n'.format(X, Y))
+		# print('res = \n{}'.format(res[:-1]))
+		# sys.exit(1)
 
-			# print('{}\n{}\n\n'.format(X, Y))
-			# print('res = \n{}'.format(res[:-1]))
-			# sys.exit(1)
+		for i in range(len(cg)):
+			idx = cg[i]
+			atom = atoms[idx]
+			atom.curChg = dec(res[i, 0])
 
-			for i in range(len(cg)):
-				idx = cg[i]
-				atom = atoms[idx]
-				atom.curChg = dec(res[i, 0])
+		# use only 3 digits for charge
+		qtot = dec(0.0)
+		for idx in cg:
+			qtot += atoms[idx].curChg
 
-			# use only 3 digits for charge
-			qtot = dec(0.0)
-			for idx in cg:
-				qtot += atoms[idx].curChg
+		for idx in cg:
+			atoms[idx].curChg -= qtot / nAtoms
 
-			for idx in cg:
-				atoms[idx].curChg -= qtot / nAtoms
+		for idx in cg:
+			atoms[idx].curChg = dec(int(atoms[idx].curChg * dec(1000.0)) / dec(1000.0))
 
-			for idx in cg:
-				atoms[idx].curChg = dec(int(atoms[idx].curChg * dec(1000.0)) / dec(1000.0))
+		qtot = dec(0.0)
+		for idx in cg:
+			qtot += atoms[idx].curChg
 
-			qtot = dec(0.0)
-			for idx in cg:
-				qtot += atoms[idx].curChg
+		atoms[cg[0]].curChg -= qtot
 
-			atoms[cg[0]].curChg -= qtot
-
-			# for idx in cg:
-			# 	print(idx, atoms[idx].curChg)
+		# for idx in cg:
+		# 	print(idx, atoms[idx].curChg)
 
 
 	def coulomb(self, atom1, atom2, sig1, sig2):
@@ -136,8 +135,12 @@ class AA_Alk(EEM):
 						idx2 = CGs[i][j]
 						if atom.isNrmNB(idx2):
 							CGs[i].append(idx1)
-		mol.CGs = CGs
-		# print(CGs)
+		for indexes in CGs:
+			cg = chgCG(indexes)
+			mol.addParameter(cg)
+
+
+
 
 
 
