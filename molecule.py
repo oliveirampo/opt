@@ -1,8 +1,11 @@
 import sys
 
 
+import effectiveParameter
 from effectiveParameter import C6
 from effectiveParameter import C12
+from effectiveParameter import NEI
+from effectiveParameter import NRM
 import parameter_utils
 
 
@@ -132,16 +135,16 @@ class Molecule:
 			typ1 = parameter_utils.getType(iac1, atomTypes)
 			typ2 = parameter_utils.getType(iac2, atomTypes)
 
-			c6_nrm = C6(idx, 'NRM', iac1, iac2, typ1, typ2, 0.0)
+			c6_nrm = effectiveParameter.createEffectiveParameterFactory('LJ', [], idx, C6(), NRM(), iac1, iac2, typ1, typ2, 0.0)
 			self._parameters.append(c6_nrm)
 			idx += 1
-			c6_nei = C6(idx, 'NEI', iac1, iac2, typ1, typ2, 0.0)
+			c6_nei = effectiveParameter.createEffectiveParameterFactory('LJ', [], idx, C6(), NEI(), iac1, iac2, typ1, typ2, 0.0)
 			self._parameters.append(c6_nei)
 			idx += 1
-			c12_nrm = C12(idx, 'NRM', iac1, iac2, typ1, typ2, 0.0)
+			c12_nrm = effectiveParameter.createEffectiveParameterFactory('LJ', [], idx, C12(), NRM(), iac1, iac2, typ1, typ2, 0.0)
 			self._parameters.append(c12_nrm)
 			idx += 1
-			c12_nei = C12(idx, 'NEI', iac1, iac2, typ1, typ2, 0.0)
+			c12_nei = effectiveParameter.createEffectiveParameterFactory('LJ', [], idx, C12(), NEI(), iac1, iac2, typ1, typ2, 0.0)
 			self._parameters.append(c12_nei)
 			idx += 1
 

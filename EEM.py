@@ -5,7 +5,7 @@ import math
 import sys
 
 
-from effectiveParameter import chgCG
+import effectiveParameter
 
 
 class EEM(ABC):
@@ -136,7 +136,8 @@ class AA_Alk(EEM):
 						if atom.isNrmNB(idx2):
 							CGs[i].append(idx1)
 		for indexes in CGs:
-			cg = chgCG(indexes)
+			# cg = chgCG(indexes)
+			cg = effectiveParameter.createEffectiveParameterFactory('CHG', indexes, '', '', '', '', '', '', '', '')
 			mol.addParameter(cg)
 
 

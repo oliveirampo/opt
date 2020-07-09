@@ -21,9 +21,6 @@ def computeCR(cr, molecules, atomTypes, matrix):
 		for prm in mol.parameters:
 			prm.computeCR(cr, atomTypes, matrix)
 
-		# import sys
-		# sys.exit(123)
-
 
 def createEffectivePrms(atomTypes, molecules, eem, matrix):
 	for cod in molecules:
