@@ -14,6 +14,17 @@ def computeEEM(eem, molecules, atomTypes):
 			prm.computeEEM(eem, atomTypes, atoms)
 
 
+def computeCR(cr, molecules, atomTypes, matrix):
+	for cod in molecules:
+		mol = molecules[cod]
+
+		for prm in mol.parameters:
+			prm.computeCR(cr, atomTypes, matrix)
+
+		# import sys
+		# sys.exit(123)
+
+
 def createEffectivePrms(atomTypes, molecules, eem, matrix):
 	for cod in molecules:
 		mol = molecules[cod]

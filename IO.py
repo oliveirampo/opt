@@ -207,6 +207,7 @@ def readPrmNei(atomTypes, fileName):
 
 	for idx, row in df.iterrows():
 		iac = str(row['iac'])
+		iac = int(iac)
 
 		if not iac in atomTypes:
 			continue
@@ -217,6 +218,7 @@ def readPrmNei(atomTypes, fileName):
 		atomType = atomTypes[iac]
 		atomType.sig_nei = sig_nei
 		atomType.eps_nei = eps_nei
+		atomType.fixed_nei = True
 
 
 def readMatrix(fileName):

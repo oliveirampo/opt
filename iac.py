@@ -13,6 +13,7 @@ class IAC:
 
 		self._sig_nei = Parameter("sig_nei", rng_sig, sig, sig, sig)
 		self._eps_nei = Parameter("eps_nei", rng_eps, eps, eps, eps)
+		self._fixed_nei = False
 
 		self._symSig = ""
 		self._symEps = ""
@@ -58,6 +59,10 @@ class IAC:
 		return self._eps_nei
 
 	@property
+	def fixed_nei(self):
+		return self._fixed_nei
+
+	@property
 	def symSig(self):
 		return self._symSig
 
@@ -72,6 +77,10 @@ class IAC:
 	@eps_nei.setter
 	def eps_nei(self, n):
 		self._eps_nei = float(n)
+
+	@fixed_nei.setter
+	def fixed_nei(self, n):
+		self._fixed_nei = n
 
 	@symSig.setter
 	def symSig(self, n):

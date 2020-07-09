@@ -37,7 +37,8 @@ class Gen(Action):
 		writeOutFiles.writeSam(self.it, molecules)
 
 		molecules_utils.computeEEM(conf.eem, molecules, atomTypes)
-		print('TODO: computeLJ')
+		# TODO - read matrix file
+		molecules_utils.computeCR(conf.cr, molecules, atomTypes, conf.matrix)
 
 		writeOutFiles.writeParamMod(self.it, molecules)
 

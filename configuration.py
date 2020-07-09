@@ -20,6 +20,7 @@ class Conf:
 		self._prd_frq     = 2500
 		self._wall_time   = 12
 		self._cr          = combiningRule.GeometricCR()
+		self._matrix      = []
 		self._eem         = EEM.NONE()
 		self._scl_sig_NEI = 1.0
 		self._scl_eps_NEI = 1.0
@@ -51,48 +52,67 @@ class Conf:
 	@property
 	def it(self):
 		return self._it
+
 	@property
 	def nJobs(self):
 		return self._nJobs
+
 	@property
 	def scl_dns(self):
 		return self._scl_dns
+
 	@property
 	def scl_hvp(self):
 		return self._scl_hvp
+
 	@property
 	def opt_nit(self):
 		return self._opt_nit
+
 	@property
 	def rng_scl(self):
 		return self._rng_scl
+
 	@property
 	def eq_stp(self):
 		return self._eq_stp
+
 	@property
 	def eq_frq(self):
 		return self._eq_frq
+
 	@property
 	def prd_stp(self):
 		return self._prd_stp
+
 	@property
 	def prd_frq(self):
 		return self._prd_frq
+
 	@property
 	def wall_time(self):
 		return self._wall_time
+
 	@property
 	def cr(self):
 		return self._cr
+
+	@property
+	def matrix(self):
+		return self._matrix
+
 	@property
 	def eem(self):
 		return self._eem
+
 	@property
 	def scl_sig_NEI(self):
 		return self._scl_sig_NEI
+
 	@property
 	def scl_eps_NEI(self):
 		return self._scl_eps_NEI
+
 	@property
 	def ignoreIAC(self):
 		return self._ignoreIAC
@@ -103,34 +123,44 @@ class Conf:
 
 	@property
 	def inpDir(self):
-		return self._inpDir      
+		return self._inpDir
+
 	@property
 	def molDataFile(self):
-		return self._molDataFile 
+		return self._molDataFile
+
 	@property
 	def atomListFile(self):
 		return self._atomListFile
+
 	@property
 	def bondListFile(self):
 		return self._bondListFile
+
 	@property
 	def angListFile(self):
-		return self._angListFile 
+		return self._angListFile
+
 	@property
 	def matrixFile(self):
 		return self._matrixFile
+
 	@property
 	def symSigFile(self):
 		return self._symSigFile
+
 	@property
 	def symEpsFile(self):
 		return self._symEpsFile
+
 	@property
 	def prmNeiFile(self):
-		return self._prmNeiFile  
+		return self._prmNeiFile
+
 	@property
 	def prmFile(self):
 		return self._prmFile
+
 	@property
 	def ifpFile(self):
 		return self._ifpFile
@@ -191,6 +221,10 @@ class Conf:
 		classes = {"GEOM": combiningRule.GeometricCR, "WH": combiningRule.WaldmanHagler, "LB": combiningRule.LorentzBerthelot, "FH": combiningRule.FenderHalsey}
 		cR = classes[n]()
 		self._cr = cR
+
+	@matrix.setter
+	def matrix(self, n):
+		self._matrix = n
 
 	@eem.setter
 	def eem(self, n):
