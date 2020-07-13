@@ -1,4 +1,4 @@
-from parameter import Parameter
+from scr.parameter import Parameter
 
 class IAC:
 	def __init__(self, iac, typ, sig, rng_sig, eps, rng_eps, hrd, rng_hrd, eln, rng_eln, sig_2, rng_sig_2, eps_2, rng_eps_2):

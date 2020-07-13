@@ -6,13 +6,11 @@ import math
 import sys
 import os
 
-
-import myExceptions
-import molecules_utils
-from molecule import Molecule
-from iac import IAC
-from matrix import Matrix
-from atom import Atom
+from scr import myExceptions, molecules_utils
+from scr.molecule import Molecule
+from scr.iac import IAC
+from scr.matrix import Matrix
+from scr.atom import Atom
 
 
 def readFile(fileName):

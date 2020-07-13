@@ -1,6 +1,4 @@
-import molecules_utils
-import writeOutFiles
-import IO
+from scr import IO, writeOutFiles, molecules_utils
 
 
 class Action:
@@ -10,9 +8,13 @@ class Action:
 		#self.check_inp_files(it)
 
 	def read_inp_files(self, conf):
+		# read molecule file
 		molecules = IO.readMolData(conf.molDataFile)
+		# read prm file
 		atomTypes = IO.readPrm(conf.prmFile)
+		# read prm_nei file
 		IO.readPrmNei(atomTypes, conf.prmNeiFile)
+		# read matrix file
 		matrix = IO.readMatrix(conf.matrixFile)
 		IO.readListAtom(conf, molecules, conf.atomListFile)
 		bnd, ang = IO.readRefBondAndAngle(conf.ifpFile)

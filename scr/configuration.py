@@ -1,9 +1,7 @@
 import numpy as np
 import sys
 
-import IO
-import EEM
-import combiningRule
+from scr import combiningRule, IO, EEM
 
 
 class Conf:

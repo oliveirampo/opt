@@ -2,10 +2,8 @@ from abc import ABC, abstractmethod
 from decimal import Decimal as dec
 import numpy as np
 import math
-import sys
 
-
-import effectiveParameter
+from scr import effectiveParameter
 
 
 class EEM(ABC):

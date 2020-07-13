@@ -1,7 +1,6 @@
 import argparse
 
-
-import action
+from scr import action
 
 
 def parse():

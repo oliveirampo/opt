@@ -1,8 +1,7 @@
 import sys
 
-from configuration import Conf
-import myExceptions
-import inpParser
+from scr.configuration import Conf
+from scr import myExceptions, inpParser
 
 
 def main():
