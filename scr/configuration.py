@@ -34,6 +34,7 @@ class Conf:
 		self._symSigFile   = '{}/{}'.format(self._inpDir, "symmetry_sig.dat")
 		self._symEpsFile   = '{}/{}'.format(self._inpDir, "symmetry_eps.dat")
 		self._prmNeiFile   = '{}/{}'.format(self._inpDir, "prm_NEI.dat")
+		self._samTemplateFile = '{}/{}'.format(self._inpDir, "model.sam")
 		self._prmFile      = '{}/{}_{}.dat'.format(self._inpDir, "prm", self._it)
 		self._ifpFile = '{}'.format("prm/2016H66_upd.ifp")
 
@@ -162,6 +163,10 @@ class Conf:
 	@property
 	def ifpFile(self):
 		return self._ifpFile
+
+	@property
+	def samTemplateFile(self):
+		return self._samTemplateFile
 
 	@it.setter
 	def it(self, n):

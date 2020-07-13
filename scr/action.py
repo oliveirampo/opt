@@ -36,13 +36,20 @@ class Gen(Action):
 		Action.__init__(self, it)
 
 	def run(self, conf, molecules, atomTypes):
-		writeOutFiles.writeSam(self.it, molecules)
+		writeOutFiles.writeMolFile(self.it, molecules)
 
 		molecules_utils.computeEEM(conf.eem, molecules, atomTypes)
 		# TODO - read matrix file
 		molecules_utils.computeCR(conf.cr, molecules, atomTypes, conf.matrix)
 
 		writeOutFiles.writeParamMod(self.it, molecules)
+
+		samTemplate = IO.readSamTemplateFile(conf.samTemplateFile)
+		writeOutFiles.writeSamFile(conf, molecules, samTemplate)
+		writeOutFiles.copyCOTO(molecules)
+
+		writeOutFiles.writeSubScript(conf, molecules)
+
 
 
 class Ana(Action):

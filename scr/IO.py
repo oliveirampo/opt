@@ -23,7 +23,6 @@ def readFile(fileName):
 
 def readConf(conf, fileName):
 	# print('reading ' + fileName)
-	lines = []
 	confDict = {}
 
 	lines = readFile(fileName)
@@ -100,7 +99,7 @@ def readConf(conf, fileName):
 		conf.ignoreIAC = confDict[key]
 
 	except KeyError:
-		raise myExceptions.MissingKeyWordError(key, "cnf")
+		raise myExceptions.MissingKeyWordError(key, "cnfFile")
 
 
 def readConf_helper(i, lines):
@@ -134,7 +133,7 @@ def checkInpFiles(cnf):
 	files = cnf.inpFiles
 	for fileName in files:
 		if not os.path.exists(fileName):
-			raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), fileName)
+			raise myExceptions.NoSuchFile(fileName)
 
 
 def readMolData(fileName):
@@ -368,5 +367,10 @@ def readSymmetry(atomTypes, symTyp, fileName):
 				atomTypes[iac].symEps = sym
 			else:
 				sys.exit("ERROR: symmetry type ({}) not supported".format(symTyp))
+
+
+def readSamTemplateFile(fileName):
+	lines = readFile(fileName)
+	return lines
 
 
