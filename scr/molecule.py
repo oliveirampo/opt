@@ -8,16 +8,20 @@ from scr import parameter_utils, effectiveParameter
 
 
 class Molecule:
-	def __init__(self, cod, frm, run, pre_sim, tem_sim, dns_wei, dns_ref, hvp_wei, hvp_ref, mlp_ref, blp_ref, eps_ref):
+	def __init__(self, cod, frm, run, pre_sim, tem_sim, properties, mlp_ref, blp_ref, eps_ref):
 		self._cod     = cod
 		self._frm     = frm
-		self._run     = float(run)
+
+		self._run = False
+		run = float(run)
+		if run == 1:
+			self._run = True
+
 		self._pre_sim = float(pre_sim)
 		self._tem_sim = float(tem_sim)
-		self._dns_wei = float(dns_wei)
-		self._dns_ref = float(dns_ref)
-		self._hvp_wei = float(hvp_wei)
-		self._hvp_ref = float(hvp_ref)
+
+		self._properties = properties
+
 		self._mlp_ref = float(mlp_ref)
 		self._blp_ref = float(blp_ref)
 		self._eps_ref = float(eps_ref)
@@ -25,6 +29,8 @@ class Molecule:
 		self._atoms = {}
 		self._CGs = []
 		self._parameters = []
+
+		# property class?
 
 	@property
 	def bondListFile(self):
@@ -46,17 +52,8 @@ class Molecule:
 	def tem_sim(self):
 		return self._tem_sim
 	@property
-	def dns_wei(self):
-		return self._dns_wei 
-	@property
-	def dns_ref(self):
-		return self._dns_ref
-	@property
-	def hvp_wei(self):
-		return self._hvp_wei
-	@property
-	def hvp_ref(self):
-		return self._hvp_ref
+	def properties(self):
+		return self._properties
 	@property
 	def mlp_ref(self):
 		return self._mlp_ref
@@ -80,6 +77,12 @@ class Molecule:
 	@CGs.setter
 	def CGs(self, n):
 		self._CGs = n
+
+	@run.setter
+	def run(self, n):
+		n = float(n)
+		if n == 1:
+			self._run = True
 
 	def addAtom(self, atom, conf):
 		try:
@@ -146,7 +149,6 @@ class Molecule:
 			self._parameters.append(c12_nei)
 			idx += 1
 
-
 	def addParameter(self, prm):
 		self._parameters.append(prm)
 
@@ -162,3 +164,12 @@ class Molecule:
 		for prm in self._parameters:
 			prm.writePrm(f)
 
+	def addTrajectory(self, letter, traj):
+		for prop in self._properties:
+			if letter == prop.letter:
+				prop.trajectory = traj
+
+	def addRunningAverages(self, letter, avgs):
+		for prop in self._properties:
+			if letter == prop.letter:
+				prop.runningAverages = avgs

@@ -11,6 +11,7 @@ from scr.molecule import Molecule
 from scr.iac import IAC
 from scr.matrix import Matrix
 from scr.atom import Atom
+from property import Dns, Hvp
 
 
 def readFile(fileName):
@@ -161,7 +162,11 @@ def readMolData(fileName):
 				blp_ref = line[10]
 				eps_ref = line[11]
 
-				mol = Molecule(cod, frm, run, pre_sim, tem_sim, dns_wei, dns_ref, hvp_wei, hvp_ref, mlp_ref, blp_ref, eps_ref)
+				dns = Dns(dns_wei, dns_ref)
+				hvp = Hvp(hvp_wei, hvp_ref)
+				properties = [dns, hvp]
+
+				mol = Molecule(cod, frm, run, pre_sim, tem_sim, properties, mlp_ref, blp_ref, eps_ref)
 				molecules[cod] = mol
 
 	return molecules

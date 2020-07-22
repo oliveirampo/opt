@@ -1,7 +1,12 @@
-from scr import IO, writeOutFiles, molecules_utils
+from abc import ABC, abstractmethod
+import shutil
+import sys
+import os
+
+from scr import ana, IO, writeOutFiles, molecules_utils
 
 
-class Action:
+class Action(ABC):
 	def __init__(self, it):
 		self.it = it
 		#self.read_inp_files(it)
@@ -27,8 +32,9 @@ class Action:
 
 		return molecules, atomTypes
 
-	def run(self, conf):
-		print("TODO: writeSam")
+	@abstractmethod
+	def run(self, conf, molecules, atomTypes):
+		pass
 
 
 class Gen(Action):
@@ -55,6 +61,15 @@ class Gen(Action):
 class Ana(Action):
 	def __init__(self, it):
 		Action.__init__(self, it)
+
+	def run(self, conf, molecules, atomType):
+		anaDir = 'ana_{}'.format(conf.it)
+		if os.path.exists(anaDir):
+			shutil.rmtree(anaDir)
+		os.makedirs(anaDir)
+
+		ana.runAna(conf, molecules, anaDir)
+
 
 
 class Opt(Action):
