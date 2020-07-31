@@ -1,3 +1,4 @@
+import pandas as pd
 import sys
 
 from scr.effectiveParameter import C6
@@ -5,6 +6,7 @@ from scr.effectiveParameter import C12
 from scr.effectiveParameter import NEI
 from scr.effectiveParameter import NRM
 from scr import parameter_utils, effectiveParameter
+from sensitivity import Sensitivity
 
 
 class Molecule:
@@ -30,7 +32,7 @@ class Molecule:
 		self._CGs = []
 		self._parameters = []
 
-		# property class?
+		self._sens = Sensitivity(pd.DataFrame())
 
 	@property
 	def bondListFile(self):
@@ -74,6 +76,10 @@ class Molecule:
 	def CGs(self):
 		return self._CGs
 
+	@property
+	def sens(self):
+		return self._sens
+
 	@CGs.setter
 	def CGs(self, n):
 		self._CGs = n
@@ -83,6 +89,10 @@ class Molecule:
 		n = float(n)
 		if n == 1:
 			self._run = True
+
+	@sens.setter
+	def sens(self, df):
+		self._sens = df
 
 	def addAtom(self, atom, conf):
 		try:

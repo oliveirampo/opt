@@ -6,6 +6,7 @@ class Sensitivity():
         self._df = df.copy()
 
     def __str__(self):
+        print(self._df.head(2))
         s = '({}, {})'.format(self._df.shape[0], self._df.shape[1])
         return s
 

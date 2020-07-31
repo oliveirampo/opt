@@ -29,6 +29,7 @@ def runAna(conf, molecules, anaDir):
                 writeAllSum(mol, allSum)
 
                 addSens(conf, mol)
+                print(mol.sens)
 
                 print('TODO: writeResFile')
 
@@ -154,6 +155,7 @@ def addSens(conf, mol):
         sens.addDerivative(letter, avg, maxDev)
 
     # sens.getAllDerivatives('D')
+    mol.sens = sens
 
 
 def getMaxDev(prop):
