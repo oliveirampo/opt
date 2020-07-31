@@ -3,14 +3,27 @@ import numpy as np
 import ana
 
 class Property():
-    def __init__(self, letter, wei, ref):
+    def __init__(self, letter, unit, wei, ref):
+        self._letter = letter
+        self._unit = unit
         self._wei = wei
         self._ref = ref
-        self._letter = letter
         self._trajectory = [[]]
         self._runningAverages = []
         self._sim = np.nan
         self._maxDev = np.nan
+
+    @property
+    def letter(self):
+        return self._letter
+
+    @property
+    def unit(self):
+        return self._unit
+
+    @unit.setter
+    def unit(self, value):
+        self._unit = value
 
     @property
     def wei(self):
@@ -33,8 +46,12 @@ class Property():
         self._trajectory = value
 
     @property
-    def letter(self):
-        return self._letter
+    def maxDev(self):
+        return self._maxDev
+
+    @property
+    def sim(self):
+        return self._sim
 
     @property
     def runningAverages(self):
@@ -54,8 +71,8 @@ class Property():
 
 class Dns(Property):
     def __init__(self, wei, ref):
-        super().__init__('D', wei, ref)
+        super().__init__('D', 'kg/m^3', wei, ref)
 
 class Hvp(Property):
     def __init__(self, wei, ref):
-        super().__init__('H', wei, ref)
+        super().__init__('H', 'kJ/mol', wei, ref)

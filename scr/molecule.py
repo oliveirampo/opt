@@ -173,3 +173,8 @@ class Molecule:
 		for prop in self._properties:
 			if letter == prop.letter:
 				prop.runningAverages = avgs
+
+	def getNumProps(self):
+		return len(self._properties)
+
+
