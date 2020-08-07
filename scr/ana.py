@@ -5,7 +5,7 @@ import os
 
 
 import myExceptions
-from sensitivity import Sensitivity
+from scr.sensitivity import Sensitivity
 
 
 def runAna(conf, molecules, anaDir):
@@ -16,7 +16,10 @@ def runAna(conf, molecules, anaDir):
     newMolFile = anaDir + '/mol.dat'
     rmsdFile = anaDir + '/rmsd_' + str(it) + '.dat'
 
-    with open(allOutFile, 'w') as allOut, open(allSumFile, 'w') as allSum:
+    with open(allOutFile, 'w') as allOut, open(allSumFile, 'w') as allSum,\
+            open(resFile, 'w') as res, open(newMolFile, 'w') as newMolData,\
+            open(rmsdFile, 'w') as rmsdOut:
+
         for cod in molecules:
             mol = molecules[cod]
 
@@ -29,9 +32,14 @@ def runAna(conf, molecules, anaDir):
                 writeAllSum(mol, allSum)
 
                 addSens(conf, mol)
-                print(mol.sens)
+                # print(mol.sens)
 
-                print('TODO: writeResFile')
+                writeResFile(mol, res)
+
+                writeMolData(mol, newMolData)
+
+        df = getExpSimData(molecules)
+        writeRmsd(df, rmsdOut)
 
 
 def addSimprop(conf, mol):
@@ -92,7 +100,7 @@ def addSens(conf, mol):
     it = conf.it
     nJobs = conf.nJobs
 
-    sens = Sensitivity(pd.DataFrame(columns=['typ', 'idx1', 'idx2']))
+    sens = Sensitivity(pd.DataFrame(columns=['typ', 'idx1', 'idx2', 'nam1', 'nam2', 'val']))
 
     sensitivities = {}
     startJob = 1
@@ -113,7 +121,7 @@ def addSens(conf, mol):
                 sensitivities[letter][i] = dat
 
                 if len(sensitivities) == 1:
-                    sens.addPrmInfo(dat['typ'], dat['idx1'], dat['idx2'])
+                    sens.addPrmInfo(dat['typ'], dat['idx1'], dat['idx2'], dat['nam1'], dat['nam2'], dat['val'])
 
             else:
                 sensitivities[letter][i] = dat
@@ -142,15 +150,9 @@ def addSens(conf, mol):
         avg = np.mean(data, axis=1)
 
         # get max dev
-        dev = np.zeros(shape=(nRows,1))
-        for i in range(data.shape[1]):
-            for j in range(i + 1, data.shape[1]):
-                dat = abs(data[:,i] - data[:,j])
-                dat = np.reshape(dat, (dat.shape[0], 1))
-
-                dev = np.concatenate((dev, dat), axis=1)
-
-        maxDev = np.amax(dev, axis=1)
+        minVal = np.min(data, axis=1)
+        maxVal = np.max(data, axis=1)
+        maxDev = np.abs(minVal - maxVal)
 
         sens.addDerivative(letter, avg, maxDev)
 
@@ -172,7 +174,6 @@ def getMaxDev(prop):
 
 def writeAllFile(mol, out):
     cod = mol.cod
-    print(cod)
 
     frm = mol.frm
     run = '1.0'
@@ -230,6 +231,151 @@ def writeAllSum(mol, allSum):
         .format(wei, ref, sim, dev, err, dd, unit, '/'))
 
     allSum.write('\n')
+
+
+def writeResFile(mol, out):
+    cod = mol.cod
+    sens = mol.sens
+    sens.writeResFile(cod, out)
+
+
+def writeMolData(mol, out):
+    cod = mol.cod
+    frm = mol.frm
+    run = mol.run
+    pre_sim = mol.pre_sim
+    tem_sim = mol.tem_sim
+    mlp_ref = mol.mlp_ref
+    blp_ref = mol.blp_ref
+    eps_ref = mol.eps_ref
+
+    s = ''
+    properties = mol.properties
+    for prop in properties:
+        letter = prop.letter
+        wei = prop.wei
+        ref = prop.ref
+        sim = prop.sim
+        maxDev = prop.maxDev
+
+        if letter == 'D' and sim < 400.0:
+            run = False
+            wei = 0.0
+
+        elif letter == 'D' and maxDev > 100.0:
+            run = False
+            wei = 0.0
+
+        s = '{} {:4} {:6.1f}'.format(s, wei, ref)
+
+    if run:
+        run = 1
+
+    out.write('{:8} {:10} {:2} {:6} {:7}'
+    .format(cod, frm, run, pre_sim, tem_sim))
+    out.write(s)
+    out.write('{:7} {:7} {:6}\n'.format(mlp_ref, blp_ref, eps_ref))
+
+
+def getExpSimData(molecules):
+    # get number of molecules
+    # get number of data points for each property
+
+    colNames = ['cod']
+    df = pd.DataFrame(columns=colNames)
+
+    for cod in molecules:
+        mol = molecules[cod]
+        run = mol.run
+        if run:
+            idx = df.shape[0]
+            df.loc[idx, 'cod'] = cod
+
+            properties = mol.properties
+            for prop in properties:
+                wei = prop.wei
+                letter = prop.letter
+                ref = np.nan
+                sim = np.nan
+                if wei != 0.0:
+                    ref = prop.ref
+                    sim = prop.sim
+
+                df.loc[idx, 'ref_{}'.format(letter)] = ref
+                df.loc[idx, 'sim_{}'.format(letter)] = sim
+                df.loc[idx, 'diff_{}'.format(letter)] = sim - ref
+                df.loc[idx, 'diff2_{}'.format(letter)] = (sim - ref) * (sim - ref)
+                df.loc[idx, 'err_{}'.format(letter)] = 100 * (sim - ref) / ref
+
+    return df
+
+
+def writeRmsd(df, out):
+    propLetters = []
+    for col in df.columns[1:]:
+        letter = col.split('_')[-1]
+        if not letter in propLetters:
+            propLetters.append(letter)
+
+    df['short_cod'] = df['cod'].map(lambda x: x[0] + x[2])
+
+    # get statistics per group of compounds (based on short_cod)
+    df_grouped = df.groupby('short_cod')
+    codes = list(df_grouped.groups.keys())
+    for i in range(len(codes)):
+        cod = codes[i]
+        data = df_grouped.get_group(cod)
+
+        # print('{:3} {:4}'.format(cod, 1), end=' ')
+        out.write('{:3} {:4}'.format(cod, 1))
+
+        for letter in propLetters:
+            dat = data.dropna(subset=['ref_{}'.format(letter)])
+            nData = dat.shape[0]
+
+            if nData == 0:
+                # print('{:4} {:>6} {:>6} {:>6} {:>7}'.format(nData, '-', '-', '-', '-', '-'), end=' ')
+                out.write('{:4} {:>6} {:>6} {:>6} {:>7}'.format(nData, '-', '-', '-', '-', '-'))
+
+            else:
+                prop_avg, rmsd, aved, mean_err = getRmsd(letter, dat)
+
+                # print('{:4} {:6.1f} {:6.1f} {:6.1f} {:7.1f}'.format(nData, rmsd, aved, mean_err, prop_avg), end=' ')
+                out.write('{:4} {:6.1f} {:6.1f} {:6.1f} {:7.1f}'.format(nData, rmsd, aved, mean_err, prop_avg))
+
+        # print('')
+        out.write('\n')
+
+    # get total statistics
+    nMol = df['cod'].map(lambda x: x[:5]).unique().shape[0]
+
+    # print('{:3} {:4}'.format('T', nMol), end=' ')
+    out.write('{:3} {:4}'.format('T', nMol))
+
+    for letter in propLetters:
+        dat = df.dropna(subset=['ref_{}'.format(letter)])
+        nData = dat.shape[0]
+        prop_avg, rmsd, aved, mean_err = getRmsd(letter, dat)
+
+        # print('{:4} {:6.1f} {:6.1f} {:6.1f} {:7.1f}'.format(nData, rmsd, aved, mean_err, prop_avg), end=' ')
+        out.write('{:4} {:6.1f} {:6.1f} {:6.1f} {:7.1f}'.format(nData, rmsd, aved, mean_err, prop_avg))
+    # print('')
+    out.write('\n')
+
+
+def getRmsd(prop, df):
+    prop_avg = np.mean(df[['ref_{}'.format(prop)]]).values[0]
+    rmsd = np.sqrt(np.mean(df[['diff2_{}'.format(prop)]], axis=1)).values[0]
+    aved = np.mean(df[['diff_{}'.format(prop)]], axis=1).values[0]
+    mean_err = np.mean(df[['err_{}'.format(prop)]], axis=1).values[0]
+    return prop_avg, rmsd, aved, mean_err
+
+
+
+
+
+
+
 
 
 

@@ -6,7 +6,7 @@ from scr.effectiveParameter import C12
 from scr.effectiveParameter import NEI
 from scr.effectiveParameter import NRM
 from scr import parameter_utils, effectiveParameter
-from sensitivity import Sensitivity
+from scr.sensitivity import Sensitivity
 
 
 class Molecule:
