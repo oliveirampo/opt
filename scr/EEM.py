@@ -87,11 +87,11 @@ class EEM(ABC):
 	def coulomb(self, atom1, atom2, sig1, sig2):
 		dist = 0.0
 
-		# check if iac2 is second neighbor of iac1
+		# check if iac2 is first neighbor of iac1
 		if atom1.isNrmNB(atom2.idx):
 			dist = atom1.getNrmBndDist(atom2.idx)
 
-		# otherwise use distance as thrid neighbor
+		# otherwise use distance as second neighbor
 		else:
 			if atom1.isNeiNB(atom2.idx):
 				dist = atom1.getNeiBndDist(atom2.idx)

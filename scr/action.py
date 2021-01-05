@@ -4,6 +4,7 @@ import sys
 import os
 
 from scr import ana, IO, writeOutFiles, molecules_utils
+import optimize
 
 
 class Action(ABC):
@@ -75,3 +76,6 @@ class Ana(Action):
 class Opt(Action):
 	def __init__(self, it):
 		Action.__init__(self, it - 1)
+
+	def run(self, conf, molecules, atomTypes):
+		optimize.runOptimization(conf, molecules, atomTypes)

@@ -181,7 +181,7 @@ def readPrm(fileName):
 			iac = int(line[0])
 
 			if iac in atomTypes:
-				sys.exit(cod + ' is already in prm_IT.dat')
+				sys.exit(iac + ' is already in prm_IT.dat')
 
 			typ       = line[1]
 			sig       = float(line[2])
@@ -366,12 +366,7 @@ def readSymmetry(atomTypes, symTyp, fileName):
 			if typ != atomTypes[iac].typ:
 				sys.exit('\n\tWrong typ for IAC={}: {} != {}\n'.format(iac, typ, atomTypes[iac].typ))
 
-			if symTyp == "sig":
-				atomTypes[iac].symSig = sym
-			elif symTyp == "eps":
-				atomTypes[iac].symEps = sym
-			else:
-				sys.exit("ERROR: symmetry type ({}) not supported".format(symTyp))
+			atomTypes[iac].addSymmetry(symTyp, sym)
 
 
 def readSamTemplateFile(fileName):

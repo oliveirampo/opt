@@ -2,50 +2,51 @@ import numpy as np
 import sys
 
 from scr import combiningRule, IO, EEM
+import myExceptions
 
 
 class Conf:
 	def __init__(self, fileName, it):
-		self._it          = int(it)
-		self._nJobs       = 4
-		self._scl_dns     = 20.0
-		self._scl_hvp     = 1.0
-		self._opt_nit     = 5000 
-		self._rng_scl     = 5.0
-		self._eq_stp      = 150000
-		self._eq_frq      = 2500
-		self._prd_stp     = 150000
-		self._prd_frq     = 2500
-		self._wall_time   = 12
-		self._cr          = combiningRule.GeometricCR()
-		self._matrix      = []
-		self._eem         = EEM.NONE()
+		self._it = int(it)
+		self._nJobs = 4
+		self._scl_dns = 20.0
+		self._scl_hvp = 1.0
+		self._opt_nit = 5000
+		self._rng_scl = 5.0
+		self._eq_stp = 150000
+		self._eq_frq = 2500
+		self._prd_stp = 150000
+		self._prd_frq = 2500
+		self._wall_time = 12
+		self._cr = combiningRule.GeometricCR()
+		self._matrix = []
+		self._eem = EEM.NONE()
 		self._scl_sig_NEI = 1.0
 		self._scl_eps_NEI = 1.0
-		self._ignoreIAC   = []
+		self._ignoreIAC = []
 
 		# input files
-		self._inpDir       = '00_inp'
-		self._molDataFile  = '{}/{}'.format(self._inpDir, "mol.dat")
+		self._inpDir = '00_inp'
+		self._molDataFile = '{}/{}'.format(self._inpDir, "mol.dat")
 		self._atomListFile = '{}/{}'.format(self._inpDir, "listAtom.dat")
 		self._bondListFile = '{}/{}'.format(self._inpDir, "listBond.dat")
-		self._angListFile  = '{}/{}'.format(self._inpDir, "listAng.dat")
-		self._matrixFile   = '{}/{}'.format(self._inpDir, "matrix.dat")
-		self._symSigFile   = '{}/{}'.format(self._inpDir, "symmetry_sig.dat")
-		self._symEpsFile   = '{}/{}'.format(self._inpDir, "symmetry_eps.dat")
-		self._prmNeiFile   = '{}/{}'.format(self._inpDir, "prm_NEI.dat")
+		self._angListFile = '{}/{}'.format(self._inpDir, "listAng.dat")
+		self._matrixFile = '{}/{}'.format(self._inpDir, "matrix.dat")
+		self._symSigFile = '{}/{}'.format(self._inpDir, "symmetry_sig.dat")
+		self._symEpsFile = '{}/{}'.format(self._inpDir, "symmetry_eps.dat")
+		self._prmNeiFile = '{}/{}'.format(self._inpDir, "prm_NEI.dat")
 		self._samTemplateFile = '{}/{}'.format(self._inpDir, "model.sam")
-		self._prmFile      = '{}/{}_{}.dat'.format(self._inpDir, "prm", self._it)
+		self._prmFile = '{}/{}_{}.dat'.format(self._inpDir, "prm", self._it)
 		self._ifpFile = '{}'.format("prm/2016H66_upd.ifp")
 
 		# plot configuration
-		#self._iac_name = {}
+		# self._iac_name = {}
 
 		self._inpFiles = [self._molDataFile, self._atomListFile, self._bondListFile, self._angListFile, self._matrixFile, self._ifpFile, self._prmNeiFile, self._prmFile]
 
 		IO.readConf(self, fileName)
 		# TODO 
-		#IO.checkInpDir(self) 
+		# IO.checkInpDir(self)
 		IO.checkInpFiles(self)
 
 	@property
@@ -197,6 +198,7 @@ class Conf:
 
 	@rng_scl.setter
 	def rng_scl(self, n):
+		n = float(n)
 		self._rng_scl = n
 
 	@eq_stp.setter
@@ -231,7 +233,12 @@ class Conf:
 
 	@eem.setter
 	def eem(self, n):
-		classes = {'HALO': EEM.NONE, 'AA-Alk': EEM.AA_Alk}
+		classes = {'HALO': EEM.NONE, 'AA-Alk': EEM.AA_Alk, 'NONE': EEM.NONE}
+
+		if n not in classes:
+			print('\n\tNo such EEM class: {}'.format(n))
+			sys.exit(1)
+
 		eem = classes[n]()
 		self._eem = eem
 
@@ -260,7 +267,7 @@ class Conf:
 		self._inpFiles = n
 
 	def ignoreAtom(self, iac):
-		#print(self._ignoreIAC)
+		# print(self._ignoreIAC)
 		if iac in self._ignoreIAC:
 			return True
 		return False

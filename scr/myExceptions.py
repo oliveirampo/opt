@@ -12,6 +12,3 @@ class NoSuchFile(FileNotFoundError):
 	def __init__(self, fileName):
 		s = '\n\tNo such file: {}'.format(fileName)
 		super().__init__(s)
-
-
-

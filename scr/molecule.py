@@ -11,8 +11,8 @@ from scr.sensitivity import Sensitivity
 
 class Molecule:
 	def __init__(self, cod, frm, run, pre_sim, tem_sim, properties, mlp_ref, blp_ref, eps_ref):
-		self._cod     = cod
-		self._frm     = frm
+		self._cod = cod
+		self._frm = frm
 
 		self._run = False
 		run = float(run)
@@ -35,39 +35,45 @@ class Molecule:
 		self._sens = Sensitivity(pd.DataFrame())
 
 	@property
-	def bondListFile(self):
-		return self._bondListFile
-
-	@property
 	def cod(self):
 		return self._cod
+
 	@property
 	def frm(self):
 		return self._frm
+
 	@property
 	def run(self):
 		return self._run
+
 	@property
 	def pre_sim(self):
 		return self._pre_sim
+
 	@property
 	def tem_sim(self):
 		return self._tem_sim
+
 	@property
 	def properties(self):
 		return self._properties
+
 	@property
 	def mlp_ref(self):
 		return self._mlp_ref
+
 	@property
 	def blp_ref(self):
 		return self._blp_ref
+
 	@property
 	def eps_ref(self):
 		return self._eps_ref
+
 	@property
 	def atoms(self):
 		return self._atoms
+
 	@property
 	def parameters(self):
 		return self._parameters
@@ -123,7 +129,7 @@ class Molecule:
 		iacList = []
 		for idx in self._atoms:
 			iac = self._atoms[idx].iac
-			if not iac in iacList:
+			if iac not in iacList:
 				iacList.append(iac)
 
 		iacList = sorted(iacList)
@@ -186,5 +192,3 @@ class Molecule:
 
 	def getNumProps(self):
 		return len(self._properties)
-
-
