@@ -1,11 +1,14 @@
 import numpy as np
 
+
 import ana
 
-class Property():
-    def __init__(self, letter, unit, wei, ref):
-        self._letter = letter
+
+class Property:
+    def __init__(self, code, unit, scale, wei, ref):
+        self._code = code
         self._unit = unit
+        self._scale = scale
         self._wei = wei
         self._ref = ref
         self._trajectory = [[]]
@@ -14,8 +17,8 @@ class Property():
         self._maxDev = np.nan
 
     @property
-    def letter(self):
-        return self._letter
+    def code(self):
+        return self._code
 
     @property
     def unit(self):
@@ -24,6 +27,10 @@ class Property():
     @unit.setter
     def unit(self, value):
         self._unit = value
+
+    @property
+    def scale(self):
+        return self._scale
 
     @property
     def wei(self):
@@ -65,14 +72,15 @@ class Property():
         self._maxDev = maxDev
 
     def __str__(self):
-        s = '{} {} {} {}'.format(self._letter, self._wei, self._ref, len(self._runningAverages))
+        s = '{} {} {} {}'.format(self._code, self._wei, self._ref, self._sim)
         return s
 
 
 class Dns(Property):
-    def __init__(self, wei, ref):
-        super().__init__('D', 'kg/m^3', wei, ref)
+    def __init__(self, scale, wei, ref):
+        super().__init__('D', 'kg/m^3', scale, wei, ref)
+
 
 class Hvp(Property):
-    def __init__(self, wei, ref):
-        super().__init__('H', 'kJ/mol', wei, ref)
+    def __init__(self, scale, wei, ref):
+        super().__init__('H', 'kJ/mol', scale, wei, ref)

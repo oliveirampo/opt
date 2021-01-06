@@ -8,10 +8,10 @@ def checkAtoms(molecules):
 def computeEEM(eem, molecules, atomTypes):
 	for cod in molecules:
 		mol = molecules[cod]
-		atoms = mol.atoms
 
-		for prm in mol.parameters:
-			prm.computeEEM(eem, atomTypes, atoms)
+		chargeGroups = mol.CGs
+		for cg in chargeGroups:
+			eem.computeEEM(cg, atomTypes, mol)
 
 
 def computeCR(cr, molecules, atomTypes, matrix):
@@ -22,12 +22,15 @@ def computeCR(cr, molecules, atomTypes, matrix):
 			prm.computeCR(cr, atomTypes, matrix)
 
 
-def createEffectivePrms(atomTypes, molecules, eem, matrix):
+def createEffectivePrms(atomTypes, molecules, eem):
 	for cod in molecules:
 		mol = molecules[cod]
+
 		eem.setCG(molecules[cod])
-		mol.createEffectivePrms(atomTypes, eem, matrix)
+		mol.createLJPairs(atomTypes)
 
 
-
+def printPrmValue(idx, cod, molecules):
+	prm = molecules[cod].parameters[idx]
+	print(prm.nam, prm.cur)
 

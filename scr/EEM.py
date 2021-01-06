@@ -1,22 +1,17 @@
 from abc import ABC, abstractmethod
-from decimal import Decimal as dec
 import numpy as np
+import sys
 import math
-
-from scr import effectiveParameter
 
 
 class EEM(ABC):
-	def setCG(self, mol):
-		mol.CGs = []
-
-
 	@abstractmethod
 	def setCG(self, mol):
 		pass
 
 
-	def computeEEM(self, atomTypes, cg, atoms):
+	def computeEEM(self, cg, atomTypes, mol):
+		atoms = mol.atoms
 		nAtoms = len(cg)
 		X = np.empty((nAtoms + 1, nAtoms + 1,))
 		X[:] = np.zeros(nAtoms + 1)
@@ -61,27 +56,24 @@ class EEM(ABC):
 		for i in range(len(cg)):
 			idx = cg[i]
 			atom = atoms[idx]
-			atom.curChg = dec(res[i, 0])
+			atom.charge.cur = res[i, 0]
 
 		# use only 3 digits for charge
-		qtot = dec(0.0)
+		qtot = 0.0
 		for idx in cg:
-			qtot += atoms[idx].curChg
-
-		for idx in cg:
-			atoms[idx].curChg -= qtot / nAtoms
+			qtot += atoms[idx].charge.cur
 
 		for idx in cg:
-			atoms[idx].curChg = dec(int(atoms[idx].curChg * dec(1000.0)) / dec(1000.0))
+			atoms[idx].charge.cur -= qtot / nAtoms
 
-		qtot = dec(0.0)
 		for idx in cg:
-			qtot += atoms[idx].curChg
+			atoms[idx].charge.cur = int(atoms[idx].charge.cur * 1000.0) / 1000.0
 
-		atoms[cg[0]].curChg -= qtot
+		qtot = 0.0
+		for idx in cg:
+			qtot += atoms[idx].charge.cur
 
-		# for idx in cg:
-		# 	print(idx, atoms[idx].curChg)
+		atoms[cg[0]].charge.cur -= qtot
 
 
 	def coulomb(self, atom1, atom2, sig1, sig2):
@@ -133,15 +125,26 @@ class AA_Alk(EEM):
 						idx2 = CGs[i][j]
 						if atom.isNrmNB(idx2):
 							CGs[i].append(idx1)
-		for indexes in CGs:
-			# cg = chgCG(indexes)
-			cg = effectiveParameter.createEffectiveParameterFactory('CHG', indexes, '', '', '', '', '', '', '', '')
-			mol.addParameter(cg)
+
+		mol.CGs = CGs
 
 
+class O_N(EEM):
+	def setCG(self, mol):
+		CGs = []
+		atoms = mol.atoms
 
+		# add all atoms
+		indexes = []
+		for idx1 in atoms:
+			indexes.append(idx1)
 
+		CGs.append(indexes)
+		mol.CGs = CGs
 
-
-
-
+		atoms = mol.atoms
+		for idx in atoms:
+			atom = atoms[idx]
+			if not atom.ignore:
+				charge = atom.charge
+				mol.addParameter(charge)

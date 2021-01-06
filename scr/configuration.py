@@ -2,6 +2,7 @@ import numpy as np
 import sys
 
 from scr import combiningRule, IO, EEM
+from scr.matrix import Matrix
 import myExceptions
 
 
@@ -19,7 +20,7 @@ class Conf:
 		self._prd_frq = 2500
 		self._wall_time = 12
 		self._cr = combiningRule.GeometricCR()
-		self._matrix = []
+		self._matrix = Matrix()
 		self._eem = EEM.NONE()
 		self._scl_sig_NEI = 1.0
 		self._scl_eps_NEI = 1.0
@@ -186,20 +187,20 @@ class Conf:
 
 	@scl_dns.setter
 	def scl_dns(self, n):
-		self._scl_dns = n
+		self._scl_dns = float(n)
 
 	@scl_hvp.setter
 	def scl_hvp(self, n):
-		self._scl_hvp = n
+		self._scl_hvp = float(n)
 
 	@opt_nit.setter
 	def opt_nit(self, n):
-		self._opt_nit = n
+		self._opt_nit = int(n)
 
 	@rng_scl.setter
 	def rng_scl(self, n):
 		n = float(n)
-		self._rng_scl = n
+		self._rng_scl = float(n)
 
 	@eq_stp.setter
 	def eq_stp(self, n):
@@ -233,11 +234,10 @@ class Conf:
 
 	@eem.setter
 	def eem(self, n):
-		classes = {'HALO': EEM.NONE, 'AA-Alk': EEM.AA_Alk, 'NONE': EEM.NONE}
+		classes = {'HALO': EEM.NONE, 'AA-Alk': EEM.AA_Alk, 'O_N': EEM.O_N, 'NONE': EEM.NONE}
 
 		if n not in classes:
-			print('\n\tNo such EEM class: {}'.format(n))
-			sys.exit(1)
+			raise myExceptions.ClassNotImplemented(n, 'configuration')
 
 		eem = classes[n]()
 		self._eem = eem

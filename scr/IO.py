@@ -1,13 +1,14 @@
 from collections import OrderedDict
 import pandas as pd
 import numpy as np
-import errno
 import math
 import sys
 import os
 
+
 from scr import myExceptions, molecules_utils
 from scr.molecule import Molecule
+import effectiveParameter
 from scr.iac import IAC
 from scr.matrix import Matrix
 from scr.atom import Atom
@@ -137,7 +138,11 @@ def checkInpFiles(cnf):
 			raise myExceptions.NoSuchFile(fileName)
 
 
-def readMolData(fileName):
+def readMolData(conf):
+	fileName = conf.molDataFile
+	scl_dns = conf.scl_dns
+	scl_hvp = conf.scl_hvp
+
 	lines = readFile(fileName)
 	molecules = OrderedDict()
 
@@ -162,8 +167,8 @@ def readMolData(fileName):
 				blp_ref = line[10]
 				eps_ref = line[11]
 
-				dns = Dns(dns_wei, dns_ref)
-				hvp = Hvp(hvp_wei, hvp_ref)
+				dns = Dns(scl_dns, dns_wei, dns_ref)
+				hvp = Hvp(scl_hvp, hvp_wei, hvp_ref)
 				properties = [dns, hvp]
 
 				mol = Molecule(cod, frm, run, pre_sim, tem_sim, properties, mlp_ref, blp_ref, eps_ref)
@@ -248,9 +253,10 @@ def readListAtom(conf, molecules, fileName):
 			idx = line[1]
 			nam = line[2]
 			iac = line[3]
-			chg = line[4]
+			val = line[4]
 
-			atom = Atom(idx, nam, iac, chg)
+			charge = effectiveParameter.createEffectiveParameterFactory('Charge', idx, '', '', iac, '', nam, '', val)
+			atom = Atom(idx, nam, iac, charge)
 
 			if cod in molecules:
 				molecules[cod].addAtom(atom, conf)

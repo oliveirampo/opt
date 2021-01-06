@@ -2,19 +2,52 @@ from abc import ABC, ABCMeta, abstractmethod
 import math
 
 
-def createEffectiveParameterFactory(type, indexes, idx, type_c, type_14, iac1, iac2, typAtm1, typAtm2, val):
-	class chgCG(EffectiveParameter):
-		def __init__(self, indexes):
-			self._indexes = indexes
+import myExceptions
 
-		def computeEEM(self, eem, atomTypes, atoms):
-			eem.computeEEM(atomTypes, self._indexes, atoms)
+
+def createEffectiveParameterFactory(type, idx, type_c, type_14, iac1, iac2, typAtm1, typAtm2, val):
+	class Charge(EffectiveParameter):
+		def	__init__(self, idx, typAtm, val):
+			self._idx = idx
+			self._typAtm = typAtm
+			self._ori = float(val)
+			self._cur = float(val)
+			self._typ = 'CHG_ATM'
+
+			s = '{}_1_{}'.format(self._typ, self._idx)
+			self._nam = s
+
+		@property
+		def ori(self):
+			return self._ori
+
+		@property
+		def cur(self):
+			return self._cur
+
+		@property
+		def nam(self):
+			return self._nam
+
+		@ori.setter
+		def ori(self, value):
+			self._ori = value
+
+		@cur.setter
+		def cur(self, value):
+			self._cur = value
 
 		def computeCR(self, cr, atomTypes, matrix):
 			pass
 
 		def writePrm(self, out):
-			pass
+			idx = self._idx
+			typ = self._typ
+			typAtm = self._typAtm
+			val = self._cur
+
+			out.write('{0:4} {1:>7} {2:>3} {3:>3} {4:<5} {5:3} {6:>15.4f} {7:13.6e}\n'
+					  .format(idx, typ, '1', idx, 'MOLEC', typAtm, 0.0, val))
 
 	class LJ(EffectiveParameter):
 		def __init__(self, idx, type_c, type_14, iac1, iac2, typAtm1, typAtm2, val):
@@ -25,8 +58,12 @@ def createEffectiveParameterFactory(type, indexes, idx, type_c, type_14, iac1, i
 			self._iac2 = int(iac2)
 			self._typAtm1 = typAtm1
 			self._typAtm2 = typAtm2
-			self._val = val
+			self._ori = float(val)
+			self._cur = float(val)
 			self._used = False
+
+			s = '{}_{}_{}_{}'.format(self.type_c.getType(), self.type_14.getType(), self.iac1, self._iac2)
+			self._nam = s
 
 		@property
 		def idx(self):
@@ -57,15 +94,24 @@ def createEffectiveParameterFactory(type, indexes, idx, type_c, type_14, iac1, i
 			return self._typAtm2
 
 		@property
-		def curVal(self):
-			return self._val
+		def ori(self):
+			return self._ori
+
+		@property
+		def cur(self):
+			return self._cur
 
 		@property
 		def used(self):
 			return self._used
 
-		def computeEEM(self, eem, atomTypes, atoms):
-			pass
+		@ori.setter
+		def ori(self, value):
+			self._ori = value
+
+		@property
+		def nam(self):
+			return self._nam
 
 		def computeCR(self, cr, atomTypes, matrix):
 			iac1 = atomTypes[self.iac1]
@@ -111,35 +157,32 @@ def createEffectiveParameterFactory(type, indexes, idx, type_c, type_14, iac1, i
 				c6 = 4.0 * epsij * math.exp(6.0 * math.log(sigij))
 				c12 = 4.0 * epsij * math.exp(12.0 * math.log(sigij))
 
-			val = self.type_c.getVal(c6, c12)
-			self.val = val
+			val = self._type_c.getVal(c6, c12)
+			self._cur = val
 
 		def writePrm(self, out):
-			idx = self.idx
-			type_c = self.type_c.getType()
-			type_14 = self.type_14.getType()
-			iac1 = self.iac1
-			iac2 = self.iac2
-			typAtm1 = self.typAtm1
-			typAtm2 = self.typAtm2
-			val = self.val
+			idx = self._idx
+			type_c = self._type_c.getType()
+			type_14 = self._type_14.getType()
+			iac1 = self._iac1
+			iac2 = self._iac2
+			typAtm1 = self._typAtm1
+			typAtm2 = self._typAtm2
+			val = self._cur
 
 			prmName = '{}_{}'.format(type_c, type_14)
-			out.write('{0:4} {1:>7} {2:>3} {3:>3} {4:<5} {5:3} {6:>15.4f} {7:13.6e}\n'
+			out.write('{0:4} {1:>7} {2:>3} {3:>3} {4:<5} {5:5} {6:>13.4f} {7:13.6e}\n'
 					  .format(idx, prmName, iac1, iac2, typAtm1, typAtm2, 0.0, val))
 
-	if type == 'CHG':
-		return chgCG(indexes)
 	if type == 'LJ':
 		return LJ(idx, type_c, type_14, iac1, iac2, typAtm1, typAtm2, val)
-	assert 0, "Bad shape creation: " + type
+	elif type == 'Charge':
+		return Charge(idx, typAtm1, val)
+	else:
+		raise myExceptions.ClassNotImplemented(type, 'effectiveParameter')
 
 
 class EffectiveParameter(ABC):
-	@abstractmethod
-	def computeEEM(self, eem, atomTypes, atoms):
-		pass
-
 	@abstractmethod
 	def computeCR(self, cr, atomTypes, matrix):
 		pass
@@ -149,6 +192,50 @@ class EffectiveParameter(ABC):
 		pass
 
 
+class ParameterType(metaclass=ABCMeta):
+	@classmethod
+	def __subclasshook__(cls, subclass):
+		return (hasattr(subclass, 'getVal') and
+				callable(subclass.getVal) and
+				hasattr(subclass, 'getType') and
+				callable(subclass.getType) or
+				NotImplemented
+				)
+
+
+class NRM(ParameterType):
+	def getVal(self, sig_nrm, eps_nrm, sig_nei, eps_nei):
+		return sig_nrm, eps_nrm
+
+	def getType(self):
+		return 'NRM'
+
+
+class NEI(ParameterType):
+	def getVal(self, sig_nrm, eps_nrm, sig_nei, eps_nei):
+		return sig_nei, eps_nei
+
+	def getType(self):
+		return 'NEI'
+
+
+class C6(ParameterType):
+	def getVal(self, c6, c12):
+		return c6
+
+	def getType(self):
+		return 'C06'
+
+
+class C12(ParameterType):
+	def getVal(self, c6, c12):
+		return c12
+
+	def getType(self):
+		return 'C12'
+
+
+# TODO - delete them
 class LJ_14_Type(metaclass=ABCMeta):
 	@classmethod
 	def __subclasshook__(cls, subclass):
@@ -168,22 +255,6 @@ class LJ_14_Type(metaclass=ABCMeta):
 		raise NotImplementedError
 
 
-class NRM(LJ_14_Type):
-	def getVal(self, sig_nrm, eps_nrm, sig_nei, eps_nei):
-		return sig_nrm, eps_nrm
-
-	def getType(self):
-		return 'NRM'
-
-
-class NEI(LJ_14_Type):
-	def getVal(self, sig_nrm, eps_nrm, sig_nei, eps_nei):
-		return sig_nei, eps_nei
-
-	def getType(self):
-		return 'NEI'
-
-
 class LJ_C_Type(metaclass=ABCMeta):
 	@classmethod
 	def __subclasshook__(cls, subclass):
@@ -201,26 +272,3 @@ class LJ_C_Type(metaclass=ABCMeta):
 	@abstractmethod
 	def getType(self):
 		raise NotImplementedError
-
-
-class C6(LJ_C_Type):
-	def getVal(self, c6, c12):
-		return c6
-
-	def getType(self):
-		return 'C06'
-
-
-class C12(LJ_C_Type):
-	def getVal(self, c6, c12):
-		return c12
-
-	def getType(self):
-		return 'C12'
-
-
-
-
-
-
-

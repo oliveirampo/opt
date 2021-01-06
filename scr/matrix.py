@@ -22,5 +22,8 @@ class Matrix:
 			s = s + '{} [{}]\n'.format(iac, ' '.join(map(str, self._listIAC[iac])))
 		return s
 
-	
+	def __contains__(self, item):
+		return item in self._listIAC
 
+	def __getitem__(self, item):
+		return self._listIAC[item]

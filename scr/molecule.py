@@ -122,10 +122,7 @@ class Molecule:
 	def nAtoms(self):
 		return len(self._atoms)
 
-	def createEffectivePrms(self, atomTypes, eem, matrix):
-		self.createLJPairs(atomTypes, eem, matrix)
-
-	def createLJPairs(self, atomTypes, eem, matrix):
+	def createLJPairs(self, atomTypes):
 		iacList = []
 		for idx in self._atoms:
 			iac = self._atoms[idx].iac
@@ -152,16 +149,16 @@ class Molecule:
 			typ1 = parameter_utils.getType(iac1, atomTypes)
 			typ2 = parameter_utils.getType(iac2, atomTypes)
 
-			c6_nrm = effectiveParameter.createEffectiveParameterFactory('LJ', [], idx, C6(), NRM(), iac1, iac2, typ1, typ2, 0.0)
+			c6_nrm = effectiveParameter.createEffectiveParameterFactory('LJ', idx, C6(), NRM(), iac1, iac2, typ1, typ2, 0.0)
 			self._parameters.append(c6_nrm)
 			idx += 1
-			c6_nei = effectiveParameter.createEffectiveParameterFactory('LJ', [], idx, C6(), NEI(), iac1, iac2, typ1, typ2, 0.0)
+			c6_nei = effectiveParameter.createEffectiveParameterFactory('LJ', idx, C6(), NEI(), iac1, iac2, typ1, typ2, 0.0)
 			self._parameters.append(c6_nei)
 			idx += 1
-			c12_nrm = effectiveParameter.createEffectiveParameterFactory('LJ', [], idx, C12(), NRM(), iac1, iac2, typ1, typ2, 0.0)
+			c12_nrm = effectiveParameter.createEffectiveParameterFactory('LJ', idx, C12(), NRM(), iac1, iac2, typ1, typ2, 0.0)
 			self._parameters.append(c12_nrm)
 			idx += 1
-			c12_nei = effectiveParameter.createEffectiveParameterFactory('LJ', [], idx, C12(), NEI(), iac1, iac2, typ1, typ2, 0.0)
+			c12_nei = effectiveParameter.createEffectiveParameterFactory('LJ', idx, C12(), NEI(), iac1, iac2, typ1, typ2, 0.0)
 			self._parameters.append(c12_nei)
 			idx += 1
 
@@ -185,9 +182,9 @@ class Molecule:
 			if letter == prop.letter:
 				prop.trajectory = traj
 
-	def addRunningAverages(self, letter, avgs):
+	def addRunningAverages(self, propCode, avgs):
 		for prop in self._properties:
-			if letter == prop.letter:
+			if propCode == prop.code:
 				prop.runningAverages = avgs
 
 	def getNumProps(self):

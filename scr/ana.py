@@ -26,7 +26,7 @@ def runAna(conf, molecules, anaDir):
             # add running average of each job
             addSimprop(conf, mol)
 
-            if mol.run == True:
+            if mol.run:
                 writeAllFile(mol, allOut)
 
                 writeAllSum(mol, allSum)
@@ -50,13 +50,13 @@ def addSimprop(conf, mol):
     properties = {}
     startJob = 1
     for i in range(startJob, nJobs):
-        outFileName  = 'dat_{}/o_{}_{}'.format(it, cod, i)
+        outFileName = 'dat_{}/o_{}_{}'.format(it, cod, i)
         if not os.path.exists(outFileName):
             raise myExceptions.NoSuchFile(outFileName)
 
         nRow = os.popen('wc ' + outFileName).read().split()[0]
         # if nRow is not correct ignore molecule (set run to 0)
-        if not nRow in ['100', '120', '240', '1000']:
+        if nRow not in ['100', '120', '240', '1000']:
             mol.run = 0.0
             return
 
@@ -66,33 +66,33 @@ def addSimprop(conf, mol):
         lines = [row.strip().split() for row in lines]
 
         for row in lines:
-            letter = row[0]
+            propCode = row[0]
             tim = row[1]
             val = row[2]
             tim = float(tim)
             val = float(val)
-            if not letter in properties:
-                properties[letter] = {'tim': [tim]}
+            if propCode not in properties:
+                properties[propCode] = {'tim': [tim]}
                 for j in range(startJob, nJobs):
-                    properties[letter][j] = []
-                properties[letter][i].append(val)
+                    properties[propCode][j] = []
+                properties[propCode][i].append(val)
 
             else:
-                properties[letter]['tim'].append(tim)
-                properties[letter][i].append(val)
+                properties[propCode]['tim'].append(tim)
+                properties[propCode][i].append(val)
 
     # do not add instantaneous values
-    for letter in properties:
-        tim = np.unique(properties[letter]['tim'])
+    for propCode in properties:
+        tim = np.unique(properties[propCode]['tim'])
 
         traj = np.zeros((tim.shape[0], nJobs), dtype=np.float)
-        traj[:,0] = tim
+        traj[:, 0] = tim
         for j in range(startJob, nJobs):
-            traj[:,j] = np.array(properties[letter][j])
+            traj[:, j] = np.array(properties[propCode][j])
 
         # mol.addTrajectory(letter, traj)
-        avgs = traj[-1,1:]
-        mol.addRunningAverages(letter, avgs)
+        avgs = traj[-1, 1:]
+        mol.addRunningAverages(propCode, avgs)
 
 
 def addSens(conf, mol):
@@ -108,23 +108,23 @@ def addSens(conf, mol):
         outName = 'dat_{}/s_{}_{}'.format(it, cod, i)
 
         df = pd.read_csv(outName, sep='\s+',
-        names=['letter', 'tim', 'typ', 'idx1', 'idx2', 'nam1', 'nam2', 'val', 'sens'])
+        names=['propCod', 'tim', 'typ', 'idx1', 'idx2', 'nam1', 'nam2', 'val', 'sens'])
 
         lastTim = df['tim'].unique()[-1]
         df = df.loc[df['tim'] == lastTim]
 
-        for letter in df['letter'].unique():
-            dat = df.loc[df['letter'] == letter]
+        for propCod in df['propCod'].unique():
+            dat = df.loc[df['propCod'] == propCod]
 
-            if not letter in sensitivities:
-                sensitivities[letter] = {}
-                sensitivities[letter][i] = dat
+            if propCod not in sensitivities:
+                sensitivities[propCod] = {}
+                sensitivities[propCod][i] = dat
 
                 if len(sensitivities) == 1:
                     sens.addPrmInfo(dat['typ'], dat['idx1'], dat['idx2'], dat['nam1'], dat['nam2'], dat['val'])
 
             else:
-                sensitivities[letter][i] = dat
+                sensitivities[propCod][i] = dat
 
     # get avg and maxDev
     for letter in sensitivities:
@@ -225,7 +225,7 @@ def writeAllSum(mol, allSum):
             sim = '{:.1f}'.format(sim)
             dev = '{:.1f}'.format(dev)
             err = '{:.1f}'.format(err)
-            dd  = '{:.1f}'.format(dd)
+            dd = '{:.1f}'.format(dd)
 
         allSum.write('{:3} {:>8} {:6} {:>6} {:>6} ( {:>4} {:6} ) {} '
         .format(wei, ref, sim, dev, err, dd, unit, '/'))
@@ -314,7 +314,7 @@ def writeRmsd(df, out):
     propLetters = []
     for col in df.columns[1:]:
         letter = col.split('_')[-1]
-        if not letter in propLetters:
+        if letter not in propLetters:
             propLetters.append(letter)
 
     df['short_cod'] = df['cod'].map(lambda x: x[0] + x[2])
@@ -364,29 +364,9 @@ def writeRmsd(df, out):
 
 
 def getRmsd(prop, df):
-    prop_avg = np.mean(df[['ref_{}'.format(prop)]]).values[0]
-    rmsd = np.sqrt(np.mean(df[['diff2_{}'.format(prop)]], axis=1)).values[0]
-    aved = np.mean(df[['diff_{}'.format(prop)]], axis=1).values[0]
-    mean_err = np.mean(df[['err_{}'.format(prop)]], axis=1).values[0]
-    return prop_avg, rmsd, aved, mean_err
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    # prop_avg = np.mean(df[['ref_{}'.format(prop)]]).values[0]
+    # rmsd = np.sqrt(np.mean(df[['diff2_{}'.format(prop)]], axis=1)).values[0]
+    # aved = np.mean(df[['diff_{}'.format(prop)]], axis=1).values[0]
+    # mean_err = np.mean(df[['err_{}'.format(prop)]], axis=1).values[0]
+    # return prop_avg, rmsd, aved, mean_err
+    return 0, 0, 0, 0

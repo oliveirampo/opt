@@ -13,6 +13,9 @@ def main():
 		molecules, atomTypes = action.read_inp_files(conf)
 		action.run(conf, molecules, atomTypes)
 
+	except (NotImplementedError) as err:
+		print(err)
+
 	except (FileNotFoundError) as err:
 		print(err)
 		sys.exit(1)

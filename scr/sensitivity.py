@@ -18,16 +18,26 @@ class Sensitivity():
         self._df['nam1'] = nam1
         self._df['nam2'] = nam2
         self._df['val'] = val
-        self._df['prmName'] = self._df[['typ', 'idx1', 'idx2']].apply(lambda x: '_'.join(x.map(str)), axis=1)
+
+        self.setPrmName()
+
         self._df.set_index('prmName', verify_integrity=True, inplace=True)
 
-    def addDerivative(self, letter, avg, maxDev):
-        self._properties.append(letter)
-        self._df[letter + '_avg'] = avg
-        self._df[letter + '_maxDev'] = maxDev
+    def setPrmName(self):
+        self._df['prmName'] = self._df[['typ', 'idx1', 'idx2']].apply(lambda x: '_'.join(x.map(str)), axis=1)
 
-    def getAllDerivatives(self, letter):
-        print(self._df[['typ', 'idx1', 'idx2', letter + '_avg']])
+    def addDerivative(self, propCod, avg, maxDev):
+        self._properties.append(propCod)
+        self._df[propCod + '_avg'] = avg
+        self._df[propCod + '_maxDev'] = maxDev
+
+    def getAllDerivatives(self, propCod):
+        print(self._df[['typ', 'idx1', 'idx2', propCod + '_avg']])
+
+    def getDerivative(self, prmName, propCod):
+        col = propCod + '_avg'
+        val = self._df.loc[prmName, col]
+        return val
 
     # write file with average of derivatives
     def writeResFile(self, cod, out):
@@ -53,8 +63,3 @@ class Sensitivity():
             .format(cod, typ, idx1, idx2, nam1, nam2, val))
             out.write(s)
             out.write('\n')
-
-
-
-
-

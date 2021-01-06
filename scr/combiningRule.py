@@ -37,9 +37,8 @@ class LorentzBerthelot(CR):
 
 
 class FenderHalsey(CR):
-	def getSigma(self, si, sj, alpha):
+	def getSigma(self, si, sj):
 		return (si + sj) / 2
 
 	def getEpsilon(self, ei, ej, si, sj):
 		return (2 * ei * ej) / (ei * ej)
-
