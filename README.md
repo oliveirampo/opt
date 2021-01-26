@@ -17,9 +17,9 @@ constructed using a fragment library via combinatorial isomer enumeration.
 
 [J. Chem. Theory Comput., 16, 7525-​7555 (2020).](https://pubs.acs.org/doi/10.1021/acs.jctc.0c00683)
 
-This project is only concerned about topic (iv).
+* This project is only concerned about topic (iv).
 
-There are two key aspects in this scheme:
+* There are two key aspects in this scheme:
 
   1. The force-field design relies on an [electronegativity-equalization scheme](https://github.com/oliveirampo/opt/blob/master/scr/EEM.py)
 for the atomic partial charges [(J. Chem. Phys. 131, 044127 (2009))](https://aip.scitation.org/doi/10.1063/1.3187034).
