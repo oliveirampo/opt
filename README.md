@@ -1,4 +1,4 @@
-# Force-field optimizatin
+# Force-field optimization
 
 * This project is part of an integrated scheme for the automated refinement of force-field parameters 
 against experimental condensed-phase data,
