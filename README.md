@@ -13,11 +13,14 @@ constructed using a fragment library via combinatorial isomer enumeration.
   4. automatic construction of the molecular topologies by fragment assembly;
   5. iterative refinement of the force-field parameters considering the entire family.
   
-This project is only concerned about topic (iv).
-
 ![](/images/TOC.gif)
 
 [J. Chem. Theory Comput., 16, 7525-​7555 (2020).](https://pubs.acs.org/doi/10.1021/acs.jctc.0c00683)
 
-### The five main options of this script are:
+This project is only concerned about topic (iv).
 
+There are two key aspects in this scheme:
+
+  1. The force-field design relies on an [electronegativity-equalization scheme](https://github.com/oliveirampo/opt/blob/master/scr/EEM.py)
+for the atomic partial charges [(J. Chem. Phys. 131, 044127 (2009))](https://aip.scitation.org/doi/10.1063/1.3187034).
+  2. The optimization procedure used statistical-mechanical expressions.
