@@ -23,4 +23,4 @@ constructed using a fragment library via combinatorial isomer enumeration.
 
   1. The force-field design relies on an [electronegativity-equalization scheme](https://github.com/oliveirampo/opt/blob/master/scr/EEM.py)
 for the atomic partial charges [(J. Chem. Phys. 131, 044127 (2009))](https://aip.scitation.org/doi/10.1063/1.3187034).
-  2. The optimization procedure used statistical-mechanical expressions.
+  2. The optimization procedure uses statistical-mechanical expressions.
