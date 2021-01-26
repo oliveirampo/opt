@@ -3,7 +3,7 @@
     * This project is part of an integrated scheme for the automated refinement of force-field parameters 
     against experimental condensed-phase data,
     considering entire classes of organic molecules
-    constructed using a fragment library *via* combinatorial isomer enumeration.
+    constructed using a fragment library via combinatorial isomer enumeration.
 
     * The main steps of the scheme, referred to as CombiFF, are:
 
