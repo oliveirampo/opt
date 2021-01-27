@@ -13,7 +13,7 @@ constructed using a fragment library via combinatorial isomer enumeration.
   4. automatic construction of the molecular topologies by fragment assembly;
   5. iterative refinement of the force-field parameters considering the entire family.
   
-![](/images/TOC.gif)
+![](/images/TOC.png)
 
 [J. Chem. Theory Comput., 16, 7525-​7555 (2020).](https://pubs.acs.org/doi/10.1021/acs.jctc.0c00683)
 
