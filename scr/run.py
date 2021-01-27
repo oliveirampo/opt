@@ -1,8 +1,8 @@
-# import traceback
+import traceback
 import sys
 
-from scr.configuration import Conf
-from scr import myExceptions, inpParser
+from configuration import Conf
+import myExceptions, inpParser
 
 
 def main():
@@ -26,8 +26,8 @@ def main():
 
 	except (KeyError) as err:
 		# for more information about the lines use traceback
-		# exc_type, exc_value, exc_traceback = sys.exc_info()
-		# traceback.print_tb(exc_traceback, limit=4)
+		exc_type, exc_value, exc_traceback = sys.exc_info()
+		traceback.print_tb(exc_traceback, limit=4)
 		print('\n\tKeyError: {}'.format(err))
 		sys.exit(1)
 

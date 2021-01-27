@@ -1,7 +1,7 @@
 import sys
 
 
-from scr.parameter import Parameter
+from parameter import Parameter
 
 
 class IAC:

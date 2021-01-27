@@ -46,7 +46,7 @@ def createEffectiveParameterFactory(type, idx, type_c, type_14, iac1, iac2, typA
 			typAtm = self._typAtm
 			val = self._cur
 
-			out.write('{0:4} {1:>7} {2:>3} {3:>3} {4:<5} {5:3} {6:>15.4f} {7:13.6e}\n'
+			out.write('{0:>4} {1:>7} {2:>3} {3:>3} {4:<5} {5:3} {6:>15.4f} {7:>13.4f}\n'
 					  .format(idx, typ, '1', idx, 'MOLEC', typAtm, 0.0, val))
 
 	class LJ(EffectiveParameter):
@@ -126,7 +126,7 @@ def createEffectiveParameterFactory(type, idx, type_c, type_14, iac1, iac2, typA
 			if iac1.iac in matrix:
 				if iac2.iac in matrix[iac1.iac]:
 					sigi_nrm = iac1.sig_2.cur
-					epsj_nrm = iac1.eps_2.cur
+					epsi_nrm = iac1.eps_2.cur
 
 			if iac2.iac in matrix:
 				if iac1.iac in matrix[iac2.iac]:

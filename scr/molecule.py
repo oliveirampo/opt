@@ -1,12 +1,12 @@
 import pandas as pd
 import sys
 
-from scr.effectiveParameter import C6
-from scr.effectiveParameter import C12
-from scr.effectiveParameter import NEI
-from scr.effectiveParameter import NRM
-from scr import parameter_utils, effectiveParameter
-from scr.sensitivity import Sensitivity
+from effectiveParameter import C6
+from effectiveParameter import C12
+from effectiveParameter import NEI
+from effectiveParameter import NRM
+import parameter_utils, effectiveParameter
+from sensitivity import Sensitivity
 
 
 class Molecule:
@@ -166,14 +166,6 @@ class Molecule:
 		self._parameters.append(prm)
 
 	def writePrmMod(self, f):
-		# write charges
-		for idx in self._atoms:
-			atom = self._atoms[idx]
-			# print(atom.curChg)
-			f.write('{0:4} {1:>7} {2:>3} {3:>3} {4:>5} {5:3} {6:>15.4f} {7:13.4f}\n'
-			.format(idx, 'CHG_ATM', 1, idx, 'MOLEC', atom.nam, 0.0, atom.curChg))
-
-		# write LJ
 		for prm in self._parameters:
 			prm.writePrm(f)
 

@@ -31,6 +31,10 @@ class Atom:
 		return self._charge
 
 	@property
+	def bnd_nrm(self):
+		return self._bnd_nrm
+
+	@property
 	def ignore(self):
 		return self._ignore
 

@@ -1,8 +1,8 @@
 import numpy as np
 import sys
 
-from scr import combiningRule, IO, EEM
-from scr.matrix import Matrix
+import combiningRule, IO, EEM
+from matrix import Matrix
 import myExceptions
 
 

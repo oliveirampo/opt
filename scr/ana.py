@@ -5,7 +5,7 @@ import os
 
 
 import myExceptions
-from scr.sensitivity import Sensitivity
+from sensitivity import Sensitivity
 
 
 def runAna(conf, molecules, anaDir):

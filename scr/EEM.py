@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 import numpy as np
-import sys
 import math
 
 
@@ -46,6 +45,8 @@ class EEM(ABC):
 			X[nAtoms, i] = 1
 			X[i, nAtoms] = -1
 
+		# print(X)
+		# print(Y)
 		res = np.linalg.solve(X, Y)
 		EEM_ene = res[nAtoms, 0]  # TODO: save somewhere
 
@@ -130,21 +131,150 @@ class AA_Alk(EEM):
 
 
 class O_N(EEM):
+	RO = [100, 101, 102, 103, 104, 105, 106, 115, 116, 117, 118]
+	CC_EST = [119, 120, 121, 122]
+	C_EST = [102]
+
+	CARBON_OH = [111, 112, 113, 114]
+	CARBON_NH = [138, 139, 140, 141, 142, 143, 144]
+	CARBON_NOH = [146, 147, 148, 149]
+	N_amid = 6
+	N_amin = 7
+	O_double_C_acid = 1  # O=C
+	C_double_O_acid = 12  # C=O
+	OH_aci = 98
+	O_double_C_amid = 4  # O=C
+	C_double_O_amid = 18  # C=O
+
 	def setCG(self, mol):
-		CGs = []
 		atoms = mol.atoms
 
-		# add all atoms
-		indexes = []
+		indexes = [[]]
 		for idx1 in atoms:
-			indexes.append(idx1)
+			a = atoms[idx1]
+			a.used = 0
 
-		CGs.append(indexes)
-		mol.CGs = CGs
+		# add first non fixed atom to first array
+		for idx1 in atoms:
+			a = atoms[idx1]
+			if not a.ignore:
+				indexes[0].append(idx1)
+				a.used = 1
+				break
+
+		for idx1 in atoms:
+			atm1 = atoms[idx1]
+
+			if not atm1.ignore:
+
+				iac1 = atm1.iac
+				pos = -1
+				# loop over list of lists
+				for i in range(len(indexes)):
+					# loop over current list
+					for j in range(len(indexes[i])):
+
+						idx2 = indexes[i][j]
+						if idx1 == idx2:
+							continue
+
+						elif iac1 == self.C_double_O_acid:
+							break
+
+						elif iac1 == self.OH_aci:
+							break
+
+						elif iac1 == self.O_double_C_amid:
+							break
+
+						elif iac1 == self.N_amid:
+							break
+
+						elif iac1 == self.N_amin or iac1 in self.CARBON_NH:
+							# check if there is a nb already in indexes
+							for x in range(len(indexes)):
+								for y in range(len(indexes[x])):
+									idx3 = indexes[x][y]
+
+									if atm1.isNrmNB(idx3):
+										iac3 = atoms[idx3].iac
+										if iac1 in self.CARBON_NH and iac3 in self.CARBON_NH:
+											continue
+										atm1.used = 1
+										pos = x
+										break
+
+							if pos == -1:
+								break
+
+						elif atm1.isNrmNB(idx2):
+							atm2 = atoms[idx2]
+							iac2 = atm2.iac
+
+							if iac1 in self.CARBON_OH and iac2 in self.CARBON_OH:
+								continue
+
+							elif iac1 == self.C_double_O_amid and iac2 == self.C_double_O_amid:
+								continue
+
+							elif (iac1 != self.O_double_C_acid) and (iac2 == self.C_double_O_acid):
+								continue
+
+							elif iac1 in self.RO and iac2 in self.RO:
+								continue
+
+							elif iac1 in self.CC_EST:
+								continue
+
+							atm1.used = 1
+							pos = i
+							break
+
+						# 2 esters = C=O should be in the same CG
+						# check is nbs of C=O are already connected to any other ester group
+						elif iac1 in self.C_EST:
+							nbs = atm1.bnd_nrm
+							for idx_nb in nbs:
+								atom_nb = atoms[idx_nb]
+								iac_nb = atom_nb.iac
+
+								for x in range(len(indexes)):
+									for y in range(len(indexes)):
+										other_idx_tmp = indexes[x][y]
+
+										if idx_nb == other_idx_tmp:
+											continue
+
+										elif atom_nb.ignore:
+											break
+
+										elif iac_nb in self.C_EST:
+											break
+
+										elif iac_nb in self.CC_EST:
+											break
+
+										elif atm1.isNrmNB(other_idx_tmp):
+											atm1.used = 1
+											pos = x
+											break
+
+						# else:
+							# nothing to do
+
+					if pos != -1:
+						indexes[pos].append(idx1)
+						break
+
+				if atm1.used == 0:
+					indexes.append([idx1])
+
+		mol.CGs = indexes
 
 		atoms = mol.atoms
 		for idx in atoms:
 			atom = atoms[idx]
-			if not atom.ignore:
-				charge = atom.charge
-				mol.addParameter(charge)
+			# print(atom.idx, atom.iac, atom.nam)
+			# if not atom.ignore:
+			charge = atom.charge
+			mol.addParameter(charge)

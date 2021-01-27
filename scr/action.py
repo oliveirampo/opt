@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import shutil
 import os
 
-from scr import ana, IO, writeOutFiles, molecules_utils
+import ana, IO, writeOutFiles, molecules_utils
 import optimize
 
 

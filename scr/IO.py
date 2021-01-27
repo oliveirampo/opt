@@ -6,12 +6,12 @@ import sys
 import os
 
 
-from scr import myExceptions, molecules_utils
-from scr.molecule import Molecule
+import myExceptions, molecules_utils
+from molecule import Molecule
 import effectiveParameter
-from scr.iac import IAC
-from scr.matrix import Matrix
-from scr.atom import Atom
+from iac import IAC
+from matrix import Matrix
+from atom import Atom
 from property import Dns, Hvp
 
 
@@ -316,7 +316,7 @@ def readListBond(bnd, molecules, fileName):
 				atm1 = molecules[cod].getAtom(idx1)
 				atm2 = molecules[cod].getAtom(idx2)
 
-				if (not atm1.ignore) and (not atm2.ignore):
+				if (atm1.ignore is False) and (atm2.ignore is False):
 					atm1.addBndNrm(idx2, dist)
 					atm2.addBndNrm(idx1, dist)
 
@@ -337,7 +337,7 @@ def readListAngle(ang, molecules, fileName):
 				atm2 = molecules[cod].getAtom(idx2)
 				atm3 = molecules[cod].getAtom(idx3)
 
-				if (atm1.ignore == False) and (atm2.ignore == False) and (atm2.ignore == False):
+				if (atm1.ignore is False) and (atm2.ignore is False) and (atm3.ignore is False):
 					if (not atm1.isNrmNB(idx2)) and (not atm3.isNrmNB(idx2)):
 						sys.exit('{} is not the central atom'.format(atm2.nam))
 
