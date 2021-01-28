@@ -165,7 +165,7 @@ class O_N(EEM):
 		for idx1 in atoms:
 			atm1 = atoms[idx1]
 
-			if not atm1.ignore:
+			if atm1.ignore is False:
 
 				iac1 = atm1.iac
 				pos = -1
@@ -207,7 +207,7 @@ class O_N(EEM):
 							if pos == -1:
 								break
 
-						elif atm1.isNrmNB(idx2):
+						elif atm1.isNrmNB(idx2) is True:
 							atm2 = atoms[idx2]
 							iac2 = atm2.iac
 
@@ -239,13 +239,13 @@ class O_N(EEM):
 								iac_nb = atom_nb.iac
 
 								for x in range(len(indexes)):
-									for y in range(len(indexes)):
+									for y in range(len(indexes[x])):
 										other_idx_tmp = indexes[x][y]
 
 										if idx_nb == other_idx_tmp:
 											continue
 
-										elif atom_nb.ignore:
+										elif atom_nb.ignore is True:
 											break
 
 										elif iac_nb in self.C_EST:
@@ -254,7 +254,7 @@ class O_N(EEM):
 										elif iac_nb in self.CC_EST:
 											break
 
-										elif atm1.isNrmNB(other_idx_tmp):
+										elif atom_nb.isNrmNB(other_idx_tmp):
 											atm1.used = 1
 											pos = x
 											break
