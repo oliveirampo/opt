@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import sys
 
 from effectiveParameter import C6
@@ -29,6 +30,8 @@ class Molecule:
 		self._eps_ref = float(eps_ref)
 
 		self._atoms = {}
+		self._connectivity = np.empty([0, 0])
+		self._distance_matrix = np.empty([0, 0])
 		self._CGs = []
 		self._parameters = []
 
@@ -75,6 +78,14 @@ class Molecule:
 		return self._atoms
 
 	@property
+	def connectivity(self):
+		return self._connectivity
+
+	@property
+	def distance_matrix(self):
+		return self._distance_matrix
+
+	@property
 	def parameters(self):
 		return self._parameters
 
@@ -96,6 +107,20 @@ class Molecule:
 		if n == 1:
 			self._run = True
 
+	@connectivity.setter
+	def connectivity(self, matrix):
+		if matrix.shape[0] != len(self._atoms):
+			print('Inconsistency with number of atoms in connectivity matrix.')
+			sys.exit(123)
+		self._connectivity = matrix[:]
+
+	@distance_matrix.setter
+	def distance_matrix(self, matrix):
+		if matrix.shape[0] != len(self._atoms):
+			print('Inconsistency with number of atoms in distance matrix.')
+			sys.exit(123)
+		self._distance_matrix = matrix[:]
+
 	@sens.setter
 	def sens(self, df):
 		self._sens = df
@@ -112,7 +137,6 @@ class Molecule:
 		self._atoms[idx] = atom
 
 	def getAtom(self, idx):
-		idx = int(idx)
 		return self._atoms[idx]
 
 	def checkAtoms(self):
@@ -121,6 +145,28 @@ class Molecule:
 
 	def nAtoms(self):
 		return len(self._atoms)
+
+	def are_bonded(self, idx1, idx2):
+		pos1 = idx1 - 1
+		pos2 = idx2 - 1
+		return self._connectivity[pos1, pos2]
+
+	def get_bond_distance(self, idx1, idx2):
+		pos1 = idx1 - 1
+		pos2 = idx2 - 1
+		return self._distance_matrix[pos1, pos2]
+
+	def add_bond_distance(self, idx1, idx2, distance):
+		pos1 = idx1 - 1
+		pos2 = idx2 - 1
+		self._distance_matrix[pos1, pos2] = distance
+		self._distance_matrix[pos2, pos1] = distance
+
+	def get_neighbors_of_atom(self, idx1):
+		pos1 = idx1 - 1
+		neighbors_indexes = np.where(self._connectivity[pos1, :])
+		neighbors_indexes = neighbors_indexes[0] + 1
+		return neighbors_indexes
 
 	def createLJPairs(self, atomTypes):
 		iacList = []
