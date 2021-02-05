@@ -10,6 +10,16 @@ class EEM(ABC):
 
 
 	def computeEEM(self, cg, atomTypes, mol):
+		"""
+		Compute charge distribution via EE method.
+
+			Parameters:
+				cg (str): .
+				atomTypes (): .
+				mol ():
+
+		Describe what it does.
+		"""
 		atoms = mol.atoms
 		nAtoms = len(cg)
 		X = np.empty((nAtoms + 1, nAtoms + 1,))
