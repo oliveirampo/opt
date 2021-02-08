@@ -6,6 +6,16 @@ import myExceptions, inpParser
 
 
 def main():
+	"""
+	Pipeline to run optimization of force-field parameters.
+	These are the options:
+	GEN: generate param.mod files to run simulations.
+	ANA: perform analysis of the simulation results.
+	OPT: optimize force-field parameters.
+	SUB: submit jobs to run on euler (https://scicomp.ethz.ch/wiki/Main_Page).
+	PLOT: plot main simulation results.
+	"""
+
 	try:
 		action = inpParser.parse()
 		conf = Conf('00_inp/Conf.dat', action.it)

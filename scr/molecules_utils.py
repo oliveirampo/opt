@@ -5,13 +5,15 @@ def checkAtoms(molecules):
 		molecules[cod].checkAtoms()
 
 
-def computeEEM(eem, molecules, atomTypes):
+def computeChargeDistribution(eem, molecules, atom_types, kap, lam):
+	max_order = 2
+
 	for cod in molecules:
 		mol = molecules[cod]
 
 		chargeGroups = mol.CGs
 		for cg in chargeGroups:
-			eem.computeEEM(cg, atomTypes, mol)
+			eem.compute(max_order, mol, cg, atom_types, kap, lam)
 
 
 def computeCR(cr, molecules, atomTypes, matrix):
@@ -22,11 +24,13 @@ def computeCR(cr, molecules, atomTypes, matrix):
 			prm.computeCR(cr, atomTypes, matrix)
 
 
-def createEffectivePrms(atomTypes, molecules, eem):
+def createEffectivePrms(atomTypes, molecules, charge_group_type):
 	for cod in molecules:
 		mol = molecules[cod]
 
-		eem.setCG(molecules[cod])
+		charge_group_type.setCG(mol)
+		mol.createChargeTransferTopology()
+		mol.createEffectiveAtomicCharges()
 		mol.createLJPairs(atomTypes)
 
 

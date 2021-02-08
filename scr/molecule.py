@@ -8,6 +8,7 @@ from effectiveParameter import NEI
 from effectiveParameter import NRM
 import parameter_utils, effectiveParameter
 from sensitivity import Sensitivity
+from ChargeDistribution import BondChargeDistributionMethod
 
 
 class Molecule:
@@ -30,9 +31,12 @@ class Molecule:
 		self._eps_ref = float(eps_ref)
 
 		self._atoms = {}
-		self._connectivity = np.empty([0, 0])
-		self._distance_matrix = np.empty([0, 0])
+		self._connectivity = np.zeros([0, 0])
+		self._distance_matrix = np.zeros([0, 0])
+		self._charge_transfer_topology = np.zeros([0, 0])
+		self._bond_hardness = np.zeros(0)
 		self._CGs = []
+		self._net_charge = 0.0
 		self._parameters = []
 
 		self._sens = Sensitivity(pd.DataFrame())
@@ -86,6 +90,10 @@ class Molecule:
 		return self._distance_matrix
 
 	@property
+	def charge_transfer_topology(self):
+		return self._charge_transfer_topology
+
+	@property
 	def parameters(self):
 		return self._parameters
 
@@ -94,12 +102,16 @@ class Molecule:
 		return self._CGs
 
 	@property
+	def net_charge(self):
+		return self._net_charge
+
+	@property
 	def sens(self):
 		return self._sens
 
 	@CGs.setter
 	def CGs(self, n):
-		self._CGs = n
+		self._CGs = np.asarray(n)
 
 	@run.setter
 	def run(self, n):
@@ -124,6 +136,23 @@ class Molecule:
 	@sens.setter
 	def sens(self, df):
 		self._sens = df
+
+	def get_bond_hardness(self, hardness):
+		# assume bond hardnesses = sum of atomic hardnesses
+		charge_transfer_topology = self._charge_transfer_topology
+
+		bVars, B = BondChargeDistributionMethod.bondVars(charge_transfer_topology)
+		bondHardness = np.zeros(B)
+
+		for b, [i, j] in enumerate(bVars):
+			bondHardness[b] = (hardness[i] + hardness[j]) / 2
+
+		return bondHardness
+
+	def createChargeTransferTopology(self):
+		chargeTransferFilter = lambda x: 1 if x else 0
+		chargeTransferTopology = np.vectorize(chargeTransferFilter)(self.connectivity)
+		self._charge_transfer_topology = chargeTransferTopology
 
 	def addAtom(self, atom, conf):
 		try:
@@ -168,6 +197,13 @@ class Molecule:
 		neighbors_indexes = neighbors_indexes[0] + 1
 		return neighbors_indexes
 
+	def createEffectiveAtomicCharges(self):
+		atoms = self._atoms
+		for idx in atoms:
+			atom = atoms[idx]
+			charge = atom.charge
+			self._parameters.append(charge)
+
 	def createLJPairs(self, atomTypes):
 		iacList = []
 		for idx in self._atoms:
@@ -207,9 +243,6 @@ class Molecule:
 			c12_nei = effectiveParameter.createEffectiveParameterFactory('LJ', idx, C12(), NEI(), iac1, iac2, typ1, typ2, 0.0)
 			self._parameters.append(c12_nei)
 			idx += 1
-
-	def addParameter(self, prm):
-		self._parameters.append(prm)
 
 	def writePrmMod(self, f):
 		for prm in self._parameters:
