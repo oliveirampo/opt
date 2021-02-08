@@ -24,3 +24,29 @@ constructed using a fragment library via combinatorial isomer enumeration.
   1. The force-field design relies on an [electronegativity-equalization scheme](https://github.com/oliveirampo/opt/blob/master/scr/EEM.py)
 for the atomic partial charges [(J. Chem. Phys. 131, 044127 (2009))](https://aip.scitation.org/doi/10.1063/1.3187034).
   2. The optimization procedure uses statistical-mechanical expressions.
+  
+## Files Description
+
+TODO
+
+## Installation
+
+TODO
+
+## Usage
+
+These are the options:
+
+  * GEN: generate param.mod files to run simulations.
+  * ANA: perform analysis of the simulation results.
+  * OPT: optimize force-field parameters.
+  * SUB: submit jobs to run on [euler](https://scicomp.ethz.ch/wiki/Main_Page).
+  * PLOT: plot main simulation results.
+  
+Execute the pipeline with the following command:
+
+python <path to source code>/run.py $OPTION $IT
+  
+where OPTION = (GEN, ANA, OPT, SUB, PLOT)
+and IT is the iteration number.
+
