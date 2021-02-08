@@ -88,8 +88,17 @@ def readConf(conf, fileName):
 		key = "cr"
 		conf.cr = confDict[key]
 
-		key = "EEM"
-		conf.eem = confDict[key]
+		key = "charge_distribution"
+		conf.charge_distribution_method = confDict[key]
+
+		key = "charge_group_type"
+		conf.charge_group_type = confDict[key]
+
+		key = "kappa"
+		conf.kappa = confDict[key]
+
+		key = "lam"
+		conf.lam = confDict[key]
 
 		key = "scl_sig_NEI"
 		conf.scl_sig_NEI = confDict[key]
@@ -296,7 +305,9 @@ def getRef(idx, lines):
 				nBnd = lines[i][1]
 
 			else:
-				bnd[lines[i][0]] = lines[i][3]
+				bond_type = lines[i][0]
+				bond_distance = lines[i][3]
+				bnd[bond_type] = bond_distance
 
 	if len(bnd) != nBnd:
 		sys.exit('NBTY({}) != {}'.format(nBnd, len(bnd)))
@@ -304,21 +315,41 @@ def getRef(idx, lines):
 
 def readListBond(bnd, molecules, fileName):
 	lines = readFile(fileName)
+	lines = np.asarray(lines)
 
-	for line in lines:
-		if line[0][0] != '#':
-			cod = line[0]
-			if cod in molecules:
-				idx1 = line[1]
-				idx2 = line[2]
-				dist = bnd[line[3]]
+	for cod in molecules:
+		mol = molecules[cod]
 
-				atm1 = molecules[cod].getAtom(idx1)
-				atm2 = molecules[cod].getAtom(idx2)
+		if mol.run:
+			mol_rows = np.where(lines == cod)
+			mol_bonds = lines[mol_rows[0],1:]
 
-				if (atm1.ignore is False) and (atm2.ignore is False):
-					atm1.addBndNrm(idx2, dist)
-					atm2.addBndNrm(idx1, dist)
+			mol_bonds = mol_bonds.astype(object)
+			for i in range(mol_bonds.shape[0]):
+				bond_type = mol_bonds[i, -1]
+				bond_dist = bnd[bond_type]
+				mol_bonds[i, -1] = bond_dist
+
+			mol_bonds[:,0:2] = mol_bonds[:,0:2].astype(int) - 1
+			mol_bonds[:,-1] = mol_bonds[:,-1].astype(float)
+
+			n_atoms = mol.nAtoms()
+			connectivity = np.zeros([n_atoms, n_atoms], dtype=bool)
+			distance_matrix = np.zeros([n_atoms, n_atoms])
+
+			for i in range(mol_bonds.shape[0]):
+				atom_pos_1 = mol_bonds[i, 0]
+				atom_pos_2 = mol_bonds[i, 1]
+				distance = mol_bonds[i, 2]
+
+				connectivity[atom_pos_1, atom_pos_2] = True
+				connectivity[atom_pos_2, atom_pos_1] = True
+
+				distance_matrix[atom_pos_1, atom_pos_2] = distance
+				distance_matrix[atom_pos_2, atom_pos_1] = distance
+
+			mol.connectivity = connectivity
+			mol.distance_matrix = distance_matrix
 
 
 def readListAngle(ang, molecules, fileName):
@@ -328,26 +359,31 @@ def readListAngle(ang, molecules, fileName):
 		if line[0][0] != '#':
 			cod = line[0]
 			if cod in molecules:
-				idx1 = line[1]
-				idx2 = line[2]
-				idx3 = line[3]
-				theta = ang[line[4]]
+				idx1 = int(line[1])
+				idx2 = int(line[2])
+				idx3 = int(line[3])
+				theta = float(ang[line[4]])
 
-				atm1 = molecules[cod].getAtom(idx1)
-				atm2 = molecules[cod].getAtom(idx2)
-				atm3 = molecules[cod].getAtom(idx3)
+				mol = molecules[cod]
+
+				atm1 = mol.getAtom(idx1)
+				atm2 = mol.getAtom(idx2)
+				atm3 = mol.getAtom(idx3)
 
 				if (atm1.ignore is False) and (atm2.ignore is False) and (atm3.ignore is False):
-					if (not atm1.isNrmNB(idx2)) and (not atm3.isNrmNB(idx2)):
-						sys.exit('{} is not the central atom'.format(atm2.nam))
 
-					d1 = atm1.getNrmBndDist(idx2)
-					d3 = atm3.getNrmBndDist(idx2)
-					theta = float(theta)
+					bond_1_2 = mol.are_bonded(idx1, idx2)
+					bond_2_3 = mol.are_bonded(idx2, idx3)
+
+					if (bond_1_2 is False) or (bond_2_3 is False ):
+						sys.exit('Problem while reading list of angles: Atom {} is not a central atom'.format(atm2.nam))
+
+					d1 = mol.get_bond_distance(idx1, idx2)
+					d3 = mol.get_bond_distance(idx2, idx3)
+
 					dist = math.sqrt(d1 * d1 + d3 * d3 - 2 * d1 * d3 * math.cos(math.radians(theta)))
 
-					atm1.addBndNei(idx3, dist)
-					atm3.addBndNei(idx1, dist)
+					mol.add_bond_distance(idx1, idx3, dist)
 
 
 def readSymmetry(atomTypes, symTyp, fileName):

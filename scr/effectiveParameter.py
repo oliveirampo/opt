@@ -137,10 +137,10 @@ def createEffectiveParameterFactory(type, idx, type_c, type_14, iac1, iac2, typA
 			epsi_nei = epsi_nrm
 			sigj_nei = sigj_nrm
 			epsj_nei = epsj_nrm
-			if iac1.fixed_nei == True:
+			if iac1.fixed_nei:
 				sigi_nei = iac1.sig_nei
 				epsi_nei = iac1.eps_nei
-			if iac2.fixed_nei == True:
+			if iac2.fixed_nei:
 				sigj_nei = iac2.sig_nei
 				epsj_nei = iac2.eps_nei
 

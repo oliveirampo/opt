@@ -1,278 +1,372 @@
+"""Configuration object for all main options of the pipeline.
+
+Classes:
+    Conf
+"""
+
 import numpy as np
 import sys
 
-import combiningRule, IO, EEM
+import ChargeDistribution
 from matrix import Matrix
+import combiningRule
 import myExceptions
+import IO
 
 
 class Conf:
-	def __init__(self, fileName, it):
-		self._it = int(it)
-		self._nJobs = 4
-		self._scl_dns = 20.0
-		self._scl_hvp = 1.0
-		self._opt_nit = 5000
-		self._rng_scl = 5.0
-		self._eq_stp = 150000
-		self._eq_frq = 2500
-		self._prd_stp = 150000
-		self._prd_frq = 2500
-		self._wall_time = 12
-		self._cr = combiningRule.GeometricCR()
-		self._matrix = Matrix()
-		self._eem = EEM.NONE()
-		self._scl_sig_NEI = 1.0
-		self._scl_eps_NEI = 1.0
-		self._ignoreIAC = []
+    """Configuration object for all main options of the pipeline.
 
-		# input files
-		self._inpDir = '00_inp'
-		self._molDataFile = '{}/{}'.format(self._inpDir, "mol.dat")
-		self._atomListFile = '{}/{}'.format(self._inpDir, "listAtom.dat")
-		self._bondListFile = '{}/{}'.format(self._inpDir, "listBond.dat")
-		self._angListFile = '{}/{}'.format(self._inpDir, "listAng.dat")
-		self._matrixFile = '{}/{}'.format(self._inpDir, "matrix.dat")
-		self._symSigFile = '{}/{}'.format(self._inpDir, "symmetry_sig.dat")
-		self._symEpsFile = '{}/{}'.format(self._inpDir, "symmetry_eps.dat")
-		self._prmNeiFile = '{}/{}'.format(self._inpDir, "prm_NEI.dat")
-		self._samTemplateFile = '{}/{}'.format(self._inpDir, "model.sam")
-		self._prmFile = '{}/{}_{}.dat'.format(self._inpDir, "prm", self._it)
-		self._ifpFile = '{}'.format("prm/2016H66_upd.ifp")
+    Attributes:
+    -----------
+        _it: (int) Iteration number.
+        _nJobs: (it) Number of simulation jobs.
+        _scl_dns: (float) Scaling factor for density.
+        _scl_hvp: (float) Scaling factor for vaporization enthalpy.
+        _opt_nit: (it) Number of steps for the search of optimal parameters.
+        _rng_scl: (float) Range of parameter variation.
+        _eq_stp: (int) Number of equilibration steps during the simulation.
+        _eq_frq: (int) Frequency that output is printed during equilibration step.
+        _prd_stp: (int) Number of production steps during the simulation.
+        _prd_frq: (int) Frequency that output is printed during production steps.
+        _wall_time: (str, int) Simulation wall time.
+        _cr: (combiningRule) Combining rule.
+        _matrix: (Matrix) Matrix with usage of C12(II) parameter.
+        _charge_distribution_method: (ChargeDistributionMethod) Method for charge distribution.
+        _charge_group_type: (Charge_group_type) Type of charge group.
+        _kappa: (float) Parameter for charge distribution calculation.
+        _lam: (float) Parameter for charge distribution calculation.
+        _scl_sig_NEI: (float) Scaling factor for 1-4 sigma.
+        _scl_eps_NEI: (float) Scaling factor for 1-4 epsilon.
+        _ignoreIAC: (list) List of atom types indexes which are ignored during charge distribution.
 
-		# plot configuration
-		# self._iac_name = {}
+        _inpDir: (str) Directory of input files.
+        _molDataFile: (str) Input file with list of molecules ("mol.dat").
+        _atomListFile: (str) Input file with list of atoms ("listAtom.dat").
+        _bondListFile: (str) Input file with list of bonds ("listBond.dat").
+        _angListFile: (str) Input file with list of angles ("listAng.dat").
+        _matrixFile: (str) Input file with information about the usage of C12(II) parameters ("matrix.dat").
+        _symSigFile: (str) Input file with list of symmetrical atom types in terms of sigma ("symmetry_sig.dat").
+        _symEpsFile: (str) Input file with list of symmetrical atom types in terms of epsilon ("symmetry_eps.dat").
+        _prmNeiFile: (str) Input file with 1-4 interaction parameters ("prm_NEI.dat").
+        _samTemplateFile: (str) Input file with template to run SAMOS ("model.sam").
+        _prmFile: (str) Input file with parameters at given iteration ("prm_[0-9]*.dat").
+        _ifpFile: (str) IFP input file with parameters from 2016H66 force field ("2016H66_upd.ifp").
 
-		self._inpFiles = [self._molDataFile, self._atomListFile, self._bondListFile, self._angListFile, self._matrixFile, self._ifpFile, self._prmNeiFile, self._prmFile]
+        self._inpFiles: (list) List of most used input files.
 
-		IO.readConf(self, fileName)
-		# TODO 
-		# IO.checkInpDir(self)
-		IO.checkInpFiles(self)
+    Methods:
+    --------
+        ignoreAtom(iac): Checks if given atom type should be ignored in the charge distribution scheme.
+        __str__(): Returns a string of this object.
+    """
 
-	@property
-	def it(self):
-		return self._it
+    def __init__(self, fileName, it):
+        """Constructs all the necessary attributes for the configuration object from input file
+        and checks if input files exist.
 
-	@property
-	def nJobs(self):
-		return self._nJobs
+        :param fileName: (str) Name of configuration input file.
+        :param it: (int) Iteration number.
+        """
 
-	@property
-	def scl_dns(self):
-		return self._scl_dns
+        self._it = int(it)
+        self._nJobs = 4
+        self._scl_dns = 20.0
+        self._scl_hvp = 1.0
+        self._opt_nit = 5000
+        self._rng_scl = 5.0
+        self._eq_stp = 150000
+        self._eq_frq = 2500
+        self._prd_stp = 150000
+        self._prd_frq = 2500
+        self._wall_time = 12
+        self._cr = combiningRule.GeometricCR()
+        self._matrix = Matrix()
+        self._charge_distribution_method = ChargeDistribution.NONE()
+        self._charge_group_type = ChargeDistribution.Atomic()
+        self._kappa = 1.0
+        self._lam = 1.0
+        self._scl_sig_NEI = 1.0
+        self._scl_eps_NEI = 1.0
+        self._ignoreIAC = []
 
-	@property
-	def scl_hvp(self):
-		return self._scl_hvp
+        # input files
+        self._inpDir = '00_inp'
+        self._molDataFile = '{}/{}'.format(self._inpDir, "mol.dat")
+        self._atomListFile = '{}/{}'.format(self._inpDir, "listAtom.dat")
+        self._bondListFile = '{}/{}'.format(self._inpDir, "listBond.dat")
+        self._angListFile = '{}/{}'.format(self._inpDir, "listAng.dat")
+        self._matrixFile = '{}/{}'.format(self._inpDir, "matrix.dat")
+        self._symSigFile = '{}/{}'.format(self._inpDir, "symmetry_sig.dat")
+        self._symEpsFile = '{}/{}'.format(self._inpDir, "symmetry_eps.dat")
+        self._prmNeiFile = '{}/{}'.format(self._inpDir, "prm_NEI.dat")
+        self._samTemplateFile = '{}/{}'.format(self._inpDir, "model.sam")
+        self._prmFile = '{}/{}_{}.dat'.format(self._inpDir, "prm", self._it)
+        self._ifpFile = '{}'.format("prm/2016H66_upd.ifp")
 
-	@property
-	def opt_nit(self):
-		return self._opt_nit
+        self._inpFiles = [self._molDataFile, self._atomListFile, self._bondListFile, self._angListFile,
+                          self._matrixFile, self._ifpFile, self._prmNeiFile, self._prmFile]
 
-	@property
-	def rng_scl(self):
-		return self._rng_scl
+        IO.readConf(self, fileName)
+        # TODO
+        # IO.checkInpDir(self)
+        IO.checkInpFiles(self)
 
-	@property
-	def eq_stp(self):
-		return self._eq_stp
+    @property
+    def it(self):
+        return self._it
 
-	@property
-	def eq_frq(self):
-		return self._eq_frq
+    @property
+    def nJobs(self):
+        return self._nJobs
 
-	@property
-	def prd_stp(self):
-		return self._prd_stp
+    @property
+    def scl_dns(self):
+        return self._scl_dns
 
-	@property
-	def prd_frq(self):
-		return self._prd_frq
+    @property
+    def scl_hvp(self):
+        return self._scl_hvp
 
-	@property
-	def wall_time(self):
-		return self._wall_time
+    @property
+    def opt_nit(self):
+        return self._opt_nit
 
-	@property
-	def cr(self):
-		return self._cr
+    @property
+    def rng_scl(self):
+        return self._rng_scl
 
-	@property
-	def matrix(self):
-		return self._matrix
+    @property
+    def eq_stp(self):
+        return self._eq_stp
 
-	@property
-	def eem(self):
-		return self._eem
+    @property
+    def eq_frq(self):
+        return self._eq_frq
 
-	@property
-	def scl_sig_NEI(self):
-		return self._scl_sig_NEI
+    @property
+    def prd_stp(self):
+        return self._prd_stp
 
-	@property
-	def scl_eps_NEI(self):
-		return self._scl_eps_NEI
+    @property
+    def prd_frq(self):
+        return self._prd_frq
 
-	@property
-	def ignoreIAC(self):
-		return self._ignoreIAC
+    @property
+    def wall_time(self):
+        return self._wall_time
 
-	@property
-	def inpFiles(self):
-		return self._inpFiles
+    @property
+    def cr(self):
+        return self._cr
 
-	@property
-	def inpDir(self):
-		return self._inpDir
+    @property
+    def matrix(self):
+        return self._matrix
 
-	@property
-	def molDataFile(self):
-		return self._molDataFile
+    @property
+    def charge_distribution_method(self):
+        return self._charge_distribution_method
 
-	@property
-	def atomListFile(self):
-		return self._atomListFile
+    @property
+    def charge_group_type(self):
+        return self._charge_group_type
 
-	@property
-	def bondListFile(self):
-		return self._bondListFile
+    @property
+    def kappa(self):
+        return self._kappa
 
-	@property
-	def angListFile(self):
-		return self._angListFile
+    @property
+    def lam(self):
+        return self._lam
 
-	@property
-	def matrixFile(self):
-		return self._matrixFile
+    @property
+    def scl_sig_NEI(self):
+        return self._scl_sig_NEI
 
-	@property
-	def symSigFile(self):
-		return self._symSigFile
+    @property
+    def scl_eps_NEI(self):
+        return self._scl_eps_NEI
 
-	@property
-	def symEpsFile(self):
-		return self._symEpsFile
+    @property
+    def ignoreIAC(self):
+        return self._ignoreIAC
 
-	@property
-	def prmNeiFile(self):
-		return self._prmNeiFile
+    @property
+    def inpFiles(self):
+        return self._inpFiles
 
-	@property
-	def prmFile(self):
-		return self._prmFile
+    @property
+    def inpDir(self):
+        return self._inpDir
 
-	@property
-	def ifpFile(self):
-		return self._ifpFile
+    @property
+    def molDataFile(self):
+        return self._molDataFile
 
-	@property
-	def samTemplateFile(self):
-		return self._samTemplateFile
+    @property
+    def atomListFile(self):
+        return self._atomListFile
 
-	@it.setter
-	def it(self, n):
-		self._it = n
+    @property
+    def bondListFile(self):
+        return self._bondListFile
 
-	@nJobs.setter
-	def nJobs(self, n):
-		try:
-			n = int(n)
-			self._nJobs = n
+    @property
+    def angListFile(self):
+        return self._angListFile
 
-		except ValueError as err:
-			print('\nWrong number of jobs')
-			print(err)
-			sys.exit('\n')
+    @property
+    def matrixFile(self):
+        return self._matrixFile
 
-	@scl_dns.setter
-	def scl_dns(self, n):
-		self._scl_dns = float(n)
+    @property
+    def symSigFile(self):
+        return self._symSigFile
 
-	@scl_hvp.setter
-	def scl_hvp(self, n):
-		self._scl_hvp = float(n)
+    @property
+    def symEpsFile(self):
+        return self._symEpsFile
 
-	@opt_nit.setter
-	def opt_nit(self, n):
-		self._opt_nit = int(n)
+    @property
+    def prmNeiFile(self):
+        return self._prmNeiFile
 
-	@rng_scl.setter
-	def rng_scl(self, n):
-		n = float(n)
-		self._rng_scl = float(n)
+    @property
+    def prmFile(self):
+        return self._prmFile
 
-	@eq_stp.setter
-	def eq_stp(self, n):
-		self._eq_stp = n
+    @property
+    def ifpFile(self):
+        return self._ifpFile
 
-	@eq_frq.setter
-	def eq_frq(self, n):
-		self._eq_frq = n
+    @property
+    def samTemplateFile(self):
+        return self._samTemplateFile
 
-	@prd_stp.setter
-	def prd_stp(self, n):
-		self._prd_stp = n
+    @it.setter
+    def it(self, n):
+        self._it = n
 
-	@prd_frq.setter
-	def prd_frq(self, n):
-		self._prd_frq = n
+    @nJobs.setter
+    def nJobs(self, n):
+        try:
+            n = int(n)
+            self._nJobs = n
 
-	@wall_time.setter
-	def wall_time(self, n):
-		self._wall_time = n
+        except ValueError as err:
+            print('\nWrong number of jobs')
+            print(err)
+            sys.exit('\n')
 
-	@cr.setter
-	def cr(self, n):
-		classes = {"GEOM": combiningRule.GeometricCR, "WH": combiningRule.WaldmanHagler, "LB": combiningRule.LorentzBerthelot, "FH": combiningRule.FenderHalsey}
-		cR = classes[n]()
-		self._cr = cR
+    @scl_dns.setter
+    def scl_dns(self, n):
+        self._scl_dns = float(n)
 
-	@matrix.setter
-	def matrix(self, n):
-		self._matrix = n
+    @scl_hvp.setter
+    def scl_hvp(self, n):
+        self._scl_hvp = float(n)
 
-	@eem.setter
-	def eem(self, n):
-		classes = {'HALO': EEM.NONE, 'AA-Alk': EEM.AA_Alk, 'O_N': EEM.O_N, 'NONE': EEM.NONE}
+    @opt_nit.setter
+    def opt_nit(self, n):
+        self._opt_nit = int(n)
 
-		if n not in classes:
-			raise myExceptions.ClassNotImplemented(n, 'configuration')
+    @rng_scl.setter
+    def rng_scl(self, n):
+        n = float(n)
+        self._rng_scl = float(n)
 
-		eem = classes[n]()
-		self._eem = eem
+    @eq_stp.setter
+    def eq_stp(self, n):
+        self._eq_stp = n
 
-	@scl_sig_NEI.setter
-	def scl_sig_NEI(self, n):
-		self._scl_sig_NEI = n
+    @eq_frq.setter
+    def eq_frq(self, n):
+        self._eq_frq = n
 
-	@scl_eps_NEI.setter
-	def scl_eps_NEI(self, n):
-		self._scl_eps_NEI = n
+    @prd_stp.setter
+    def prd_stp(self, n):
+        self._prd_stp = n
 
-	@ignoreIAC.setter
-	def ignoreIAC(self, n):
-		if isinstance(n, str):
-			self._ignoreIAC = [int(n)]
-		elif isinstance(n, list):
-			self._ignoreIAC = [int(i) for i in n]
-		else:
-			if np.isnan(n):
-				self._ignoreIAC = []
-			else:
-				sys.exit('ERROR: wrong type for ignoreIAC')
+    @prd_frq.setter
+    def prd_frq(self, n):
+        self._prd_frq = n
 
-	@inpFiles.setter
-	def inpFiles(self, n):
-		self._inpFiles = n
+    @wall_time.setter
+    def wall_time(self, n):
+        self._wall_time = n
 
-	def ignoreAtom(self, iac):
-		# print(self._ignoreIAC)
-		if iac in self._ignoreIAC:
-			return True
-		return False
+    @cr.setter
+    def cr(self, n):
+        classes = {"GEOM": combiningRule.GeometricCR, "WH": combiningRule.WaldmanHagler,
+                   "LB": combiningRule.LorentzBerthelot, "FH": combiningRule.FenderHalsey}
+        cR = classes[n]()
+        self._cr = cR
 
-	def __str__(self):
-		s = '\t{}:00 {} {}'.format(self._wall_time, self._prd_frq, self._prd_stp)
-		return s
+    @matrix.setter
+    def matrix(self, n):
+        self._matrix = n
 
+    @charge_distribution_method.setter
+    def charge_distribution_method(self, n):
+        classes = {'NONE': ChargeDistribution.NONE, 'EEM': ChargeDistribution.EEM,
+                   'QEqAtomic': ChargeDistribution.QEqAtomic, 'QEqBond': ChargeDistribution.QEqBond,
+                   'AACT': ChargeDistribution.AACT, 'SQE': ChargeDistribution.SQE}
+
+        if n not in classes:
+            raise myExceptions.ClassNotImplemented(n, 'configuration')
+
+        charge_distribution = classes[n]()
+        self._charge_distribution_method = charge_distribution
+
+    @charge_group_type.setter
+    def charge_group_type(self, n):
+        classes = {'ATOMIC': ChargeDistribution.Atomic, 'HALO': ChargeDistribution.Halo,
+                   'AA-ALK': ChargeDistribution.AA_Alk, 'O_N': ChargeDistribution.O_N}
+
+        if n not in classes:
+            raise myExceptions.ClassNotImplemented(n, 'configuration')
+
+        charge_group = classes[n]()
+        self._charge_group_type = charge_group
+
+    @kappa.setter
+    def kappa(self, n):
+        self._kappa = float(n)
+
+    @lam.setter
+    def lam(self, n):
+        self._lam = float(n)
+
+    @scl_sig_NEI.setter
+    def scl_sig_NEI(self, n):
+        self._scl_sig_NEI = n
+
+    @scl_eps_NEI.setter
+    def scl_eps_NEI(self, n):
+        self._scl_eps_NEI = n
+
+    @ignoreIAC.setter
+    def ignoreIAC(self, n):
+        if isinstance(n, str):
+            self._ignoreIAC = [int(n)]
+        elif isinstance(n, list):
+            self._ignoreIAC = [int(i) for i in n]
+        else:
+            if np.isnan(n):
+                self._ignoreIAC = []
+            else:
+                sys.exit('ERROR: wrong type for ignoreIAC')
+
+    @inpFiles.setter
+    def inpFiles(self, n):
+        self._inpFiles = n
+
+    def ignoreAtom(self, iac):
+        if iac in self._ignoreIAC:
+            return True
+        return False
+
+    def __str__(self):
+        s = '\t{}:00 {} {}'.format(self._wall_time, self._prd_frq, self._prd_stp)
+        return s

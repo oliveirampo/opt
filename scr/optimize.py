@@ -7,8 +7,8 @@ import ana
 
 
 def runOptimization(conf, molecules, atomTypes):
-    molecules_utils.computeEEM(conf.eem, molecules, atomTypes)
-    updateEffectivePrm(conf.cr, conf.eem, conf.matrix, molecules, atomTypes)
+    molecules_utils.computeEEM(conf.charge_distribution_method, molecules, atomTypes)
+    updateEffectivePrm(conf.cr, conf.charge_distribution_method, conf.matrix, molecules, atomTypes)
 
     updateOirginalParameterValues(molecules)
 
@@ -151,7 +151,7 @@ def setMinMax(conf, prmsToOptmize):
 
 
 def minimize(conf, init, prmsToOptmize, atomTypes, molecules):
-    eem = conf.eem
+    eem = conf.charge_distribution_method
     matrix = conf.matrix
     cr = conf.cr
     opt_nit = conf.opt_nit
