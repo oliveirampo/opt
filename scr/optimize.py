@@ -1,3 +1,21 @@
+"""Optimization module based on scipy module.
+
+SciPy ``optimize`` provides functions for minimizing (or maximizing)
+objective functions, possibly subject to constraints.
+
+Methods:
+    runOptimization(conf, molecules, atomTypes)
+    testParameter(prmsToOptmize)
+    updateOirginalParameterValues(molecules)
+    addSimProp(conf, molecules)
+    getParametersToBeOptimized(atomTypes)
+    setMinMax(conf, prmsToOptmize)
+    minimize(conf, init, prmsToOptmize, atomTypes, molecules)
+    targetFunction(init, prmsToOptmize, atomTypes, cr, eem, matrix, molecules, info)
+    updatePrm(init, prmsToOptmize)
+    updateEffectivePrm(cr, eem, matrix, molecules, atomTypes)
+"""
+
 from scipy import optimize
 import sys
 
@@ -7,6 +25,18 @@ import ana
 
 
 def runOptimization(conf, molecules, atomTypes):
+    """Runs optimization of force-field parameters.
+
+    :param conf: (configuration.Conf) Configuration object.
+    :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+    :param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
+
+    - Compute charge distribution for each molecule.
+    - Update values of effective parameters for each molecule.
+    - Extracts ensemble averages ans sensitivities from simulation results.
+    - Minimize parameters.
+    """
+
     molecules_utils.computeEEM(conf.charge_distribution_method, molecules, atomTypes)
     updateEffectivePrm(conf.cr, conf.charge_distribution_method, conf.matrix, molecules, atomTypes)
 
@@ -16,18 +46,16 @@ def runOptimization(conf, molecules, atomTypes):
     addSimProp(conf, molecules)
 
     prmsToOptmize = getParametersToBeOptimized(atomTypes)
+
     # set min/max values and return initial values
     init = setMinMax(conf, prmsToOptmize)
-
-    # prm1 = atomTypes[12].sig
-    # print('prm1: ', prm1.iac, prm1.cur)
-    # testParameter(prmsToOptmize)
-    # print('prm1: ', prm1.iac, prm1.cur)
 
     minimize(conf, init, prmsToOptmize, atomTypes, molecules)
 
 
 def testParameter(prmsToOptmize):
+    """Test function. Checks if parameters are changed when one of its copies if changed."""
+
     prm2 = prmsToOptmize[0][0]
     print('prm2: ', prm2.iac, prm2.cur)
 
@@ -36,6 +64,11 @@ def testParameter(prmsToOptmize):
 
 
 def updateOirginalParameterValues(molecules):
+    """Updated original values of parameters to their respective current values.
+
+    :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+    """
+
     for cod in molecules:
         mol = molecules[cod]
         parameters = mol.parameters
@@ -44,6 +77,12 @@ def updateOirginalParameterValues(molecules):
 
 
 def addSimProp(conf, molecules):
+    """Extract ensemble averages and sensitivities from simulation results and save into molecule.
+
+    :param conf: (configuration.Conf) Configuration object.
+    :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+    """
+
     for cod in molecules:
         mol = molecules[cod]
 
@@ -55,6 +94,13 @@ def addSimProp(conf, molecules):
 
 
 def getParametersToBeOptimized(atomTypes):
+    """Returns parameters to be optimized.
+
+    :param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
+    :return:
+        prmsToOptmize: (list) List of parameters to be optimized.
+    """
+
     prmsToOptmize = []
 
     for iac in atomTypes:
@@ -111,6 +157,14 @@ def getParametersToBeOptimized(atomTypes):
 
 
 def setMinMax(conf, prmsToOptmize):
+    """Sets minimal amd maximal range of parameter variation.
+
+    :param conf: (configuration.Conf) Configuration object.
+    :param prmsToOptmize: (list) List of parameters to be optimized.
+    :return:
+        init: (list) List with initial guess of parameter values.
+    """
+
     rng_scl = conf.rng_scl
     init = []
 
@@ -151,6 +205,15 @@ def setMinMax(conf, prmsToOptmize):
 
 
 def minimize(conf, init, prmsToOptmize, atomTypes, molecules):
+    """Minimizes target function.
+
+    :param conf: (configuration.Conf) Configuration object.
+    :param init: (list) List with initial guess of parameter values.
+    :param prmsToOptmize: (list) List of parameters to be optimized.
+    :param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
+    :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+    """
+
     eem = conf.charge_distribution_method
     matrix = conf.matrix
     cr = conf.cr
@@ -167,6 +230,20 @@ def minimize(conf, init, prmsToOptmize, atomTypes, molecules):
 
 
 def targetFunction(init, prmsToOptmize, atomTypes, cr, eem, matrix, molecules, info):
+    """Computes target function given value of parameters.
+
+    :param init: (list) List with initial guess of parameter values.
+    :param prmsToOptmize: (list) List of parameters to be optimized.
+    :param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
+    :param cr: (combiningRule) Combining rule.
+    :param eem: (ChargeDistributionMethod) Charge distribution method.
+    :param matrix: (Matrix) Matrix with usage of C12(II) parameter.
+    :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+    :param info: Dictionary used to define frequency that the target function value is printed.
+    :return:
+        x_fnc: (float) Value of target function.
+    """
+
     updatePrm(init, prmsToOptmize)
     updateEffectivePrm(cr, eem, matrix, molecules, atomTypes)
 
@@ -217,8 +294,13 @@ def targetFunction(init, prmsToOptmize, atomTypes, cr, eem, matrix, molecules, i
     return x_fnc
 
 
-# adjust current value to [min, max]
 def updatePrm(init, prmsToOptmize):
+    """Updates parameter values, and adjusts current value to [min, max].
+
+    :param init: (list) List with initial guess of parameter values.
+    :param prmsToOptmize: (list) List of parameters to be optimized.
+    """
+
     for i in range(len(prmsToOptmize)):
         prmList = prmsToOptmize[i]
 
@@ -235,5 +317,15 @@ def updatePrm(init, prmsToOptmize):
 
 
 def updateEffectivePrm(cr, eem, matrix, molecules, atomTypes):
+    """Updated values of effective parameters for each molecule.
+
+    :param cr: (combiningRule) Combining rule.
+    :param eem: (ChargeDistributionMethod) Charge distribution method.
+    :param matrix: (Matrix) Matrix with usage of C12(II) parameter.
+    :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+    :param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
+    :return:
+    """
+
     molecules_utils.computeEEM(eem, molecules, atomTypes)
     molecules_utils.computeCR(cr, molecules, atomTypes, matrix)

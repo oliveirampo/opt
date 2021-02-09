@@ -1,9 +1,20 @@
-"""Compute atomic partial charges via the Electrogenative Equalization (EE) method.
+"""Methods for charge distribution
+and assignment of charge groups.
 
 Classes:
-
-    EEM
+--------
+    ChargeDistributionMethod
+    BondChargeDistributionMethod
     NONE
+    EEM
+    QEqAtomic
+    QEqBond
+    QEqBond
+    AACT
+    SQE
+
+    Charge_group_type
+    Atomic
     Halo
     AA_Alk
     O_N
@@ -12,35 +23,77 @@ Classes:
 from abc import ABC, abstractmethod
 import numpy as np
 import math
-import sys
+
+import myExceptions
 
 
 class ChargeDistributionMethod(ABC):
-    """ Base class for the EE method.
+    """Base class for charge distribution methods.
 
     Methods:
-        setCG(mol):
-            Assign charge groups of molecule.
-        computeEEM(cg, atomTypes, mol):
-            Compute charges via EE method.
+    --------
+        compute(max_order, mol, cg, atom_types, kappa, lam):
+            Computes charges via implemented charge distribution method.
+        solve(electronegativity, JMatrix, n_atoms, mol):
+            Solves system of equations.
         coulomb(cg, atomTypes, mol):
-            Compute coulomb interaction between two atoms.
+            Computes coulomb interaction terms between any two atoms.
+        get_object(n):
+            Returns object of class that implements base class ChargeDistributionMethod.
     """
 
     @abstractmethod
     def compute(self, max_order, mol, cg, atom_types, kappa, lam):
+        """Computes charges via implemented charge distribution method.
+
+        :param max_order: (int) Max order.
+        :param mol: (Molecule) Molecule.
+        :param cg: (numpy.ndarray) Charge groups - list of list with indexes of atoms in the same charge group.
+        :param atom_types: (collections.OrderedDict) Ordered dictionary of atom types.
+        :param kappa: (float) Kappa parameter (not used here).
+        :param lam: (float) Lambda parameter (not used here).
+        :return:
+            charges: (numpy.ndarray) Computed charges.
+        """
+
         pass
 
     @abstractmethod
     def solve(self, electronegativity, JMatrix, n_atoms, mol):
+        """Solves system of equations.
+
+        :param electronegativity: (numpy.ndarray) Array of electronegativities.
+        :param JMatrix: (numpy.ndarray)
+        :param n_atoms: (int) Number of atoms.
+        :param mol: (Molecule) Molecule.
+        :return:
+            charges: (numpy.ndarray) Computed charges.
+        """
+
         pass
 
+    @staticmethod
+    def get_object(n):
+        """Returns object of class that implements base class ChargeDistributionMethod.
+
+        :param n: (str) Code for class that implements base class ChargeDistributionMethod.
+        :return: One of the classes that implements ChargeDistributionMethod.
+        """
+
+        classes = {'NONE': NONE, 'EEM': EEM, 'QEqAtomic': QEqAtomic, 'QEqBond': QEqBond, 'AACT': AACT, 'SQE': SQE}
+
+        if n not in classes:
+            raise myExceptions.ClassNotImplemented(n, 'ChargeDistribution.ChargeDistributionMethod')
+        cr = classes[n]()
+        return cr
+
     def checkDim(self, obj, N):
-        '''Generic material for dimensionality checks.
-        :param obj:
-        :param N:
-        :return:
-        '''
+        """Generic material for dimensionality checks.
+
+        :param obj: (arr) 1-D or 2-D array.
+        :param N: (int) Array dimension.
+        """
+
         if len(obj.shape) == 1:
             assert len(obj) == N, "Error: got vector of length" + str(len(obj)) + ", expected " + str(N)
         else:  # vec is a matrix
@@ -48,6 +101,14 @@ class ChargeDistributionMethod(ABC):
                 N) + "," + str(N) + ")"
 
     def getParameters(self, mol, cg, atom_types):
+        """Returns diameter, hardness and electronegativity of atoms in the given charge group.
+
+        :param mol: (Molecule) Molecule.
+        :param cg: (numpy.ndarray) Charge groups - list of list with indexes of atoms in the same charge group.
+        :param atom_types: (collections.OrderedDict) Ordered dictionary of atom types.
+        :return:
+        """
+
         atoms = mol.atoms
         nAtoms = cg.shape[0]
         hardness = np.zeros(nAtoms)
@@ -71,6 +132,14 @@ class ChargeDistributionMethod(ABC):
         return diameters, hardness, electronegativity
 
     def assignCharges(self, cg, mol, charges):
+        """Assigns atomic partial charges to atoms in the given charge group.
+
+        :param cg: (numpy.ndarray) Charge groups - list of list with indexes of atoms in the same charge group.
+        :param mol: (Molecule) Molecule.
+        :param charges: (numpy.ndarray) Array of charges.
+        :return:
+        """
+
         atoms = mol.atoms
         n_atoms = cg.shape[0]
 
@@ -97,6 +166,15 @@ class ChargeDistributionMethod(ABC):
         atoms[cg[0]].charge.cur -= qtot
 
     def coulombIntegrals(self, maxOrder, mol, N, diameters):
+        """Computes coulomb integrals.
+
+        :param maxOrder: (float) Max order.
+        :param mol: (Molecule) Molecule.
+        :param N: (int) number of atoms.
+        :param diameters: (numpy.ndarray) Diameter of atoms.
+        :return: (numpy.ndarray) Coulomb integrals.
+        """
+
         connectivity = mol.connectivity
         distance_matrix = mol.distance_matrix
 
@@ -116,13 +194,47 @@ class ChargeDistributionMethod(ABC):
 
 
 class BondChargeDistributionMethod(ChargeDistributionMethod):
+    """Base class for charge distribution methods with bond contribution.
+
+    Methods:
+    --------
+        compute(max_order, mol, cg, atom_types, kappa, lam):
+            Computes charges via implemented charge distribution method.
+        solve(bondElneg, bondJMatrix, B, N):
+            Solves system of equations.
+        bondVars(charge_transfer_topology):
+        toAtomicCharges(self, bondCharges, bVars, netCharge, N):
+        bondElectronegativity(self, electronegativity, bVars, B):
+
+    """
+
     @abstractmethod
     def compute(self, max_order, mol, cg, atom_types, kappa, lam):
+        """Computes charges via implemented charge distribution method.
+
+        :param max_order:
+        :param mol:
+        :param cg:
+        :param atom_types:
+        :param kappa:
+        :param lam:
+        :return:
+        """
+
         pass
 
     # B x B system of equations
     # returns bond charges
     def solve(self, bondElneg, bondJMatrix, B, N):
+        """Solves system of equations.
+
+        :param bondElneg: (numpy.ndarray)
+        :param bondJMatrix: (bondJMatrix)
+        :param B: (int)
+        :param N: (int)
+        :return:
+            bondCharges: (numpy.ndarray) Bond charges.
+        """
 
         # system only has an unique solution for N-1 bond variables
         # otherwise we use SVD to get a particular solution instead
@@ -137,34 +249,65 @@ class BondChargeDistributionMethod(ChargeDistributionMethod):
 
         return bondCharges
 
-    # get bond variable definitions as pairs of indices
     @staticmethod
     def bondVars(charge_transfer_topology):
+        """Gets bond variable definitions as pairs of indices.
+
+        :param charge_transfer_topology: (numpy.ndarray)
+        :return:
+            bVars: (numpy.ndarray)
+            B: (int)
+        """
+
         bVars = np.argwhere(charge_transfer_topology)
         upperTriangle = np.where(bVars[:, 0] < bVars[:, 1])
         bVars = bVars[upperTriangle]
         B = len(bVars)
         return bVars, B
 
-    # map bond charges to atoms
     def toAtomicCharges(self, bondCharges, bVars, netCharge, N):
+        """Maps bond charges to atoms.
+
+        :param bondCharges: (numpy.ndarray)
+        :param bVars: (numpy.ndarray)
+        :param netCharge: (int) Net charge.
+        :param N: (int) Number of atoms.
+        :return:
+            charges (numpy.ndarray)
+        """
         charges = np.repeat(netCharge / N, N)
         for b, [i, j] in enumerate(bVars):
             charges[i] = charges[i] - bondCharges[b]
             charges[j] = charges[j] + bondCharges[b]
+
         return charges
 
-    # electronegativity vector in bond variables
     def bondElectronegativity(self, electronegativity, bVars, B):
+        """Electronegativity vector in bond variables.
+
+        :param electronegativity: (numpy.ndarray) Array of electronegativities.
+        :param bVars: (numpy.ndarray)
+        :param B: (int)
+        :return:
+            bondElneg: (numpy.ndarray)
+        """
+
         bondElneg = np.zeros(B)
         for b, [i, j] in enumerate(bVars):
             bondElneg[b] = electronegativity[j] - electronegativity[i]
         return bondElneg
 
-    # transform J Matrix to bond space
-    # hardness: 1D vector (N)
-    # res: B x B (B: #entries in upper triangle of CTT matrix)
     def calcBondJMatrix(self, JMatrix, bVars, B):
+        """Transforms J Matrix to bond space
+        hardness: 1D vector (N)
+        res: B x B (B: #entries in upper triangle of CTT matrix)
+
+        :param JMatrix: (numpy.ndarray)
+        :param bVars: (numpy.ndarray)
+        :param B: (int)
+        :return:
+            bondJMatrix: (numpy.ndarray)
+        """
 
         # initialize B x B hardness matrix
         bondJMatrix = np.zeros((B, B))
@@ -178,26 +321,70 @@ class BondChargeDistributionMethod(ChargeDistributionMethod):
 
 
 class NONE(ChargeDistributionMethod):
+    """Do not perform charge distribution.
+
+    Methods:
+    --------
+        compute(max_order, mol, cg, atom_types, kappa, lam):
+            Ignores charge distribution.
+        solve(electronegativity, JMatrix, n_atoms, mol):
+            Ignores charge distribution.
+    """
+
     def compute(self, max_order, mol, cg, atom_types, kappa, lam):
+        """Ignores charge distribution."""
         pass
 
     def solve(self, electronegativity, JMatrix, n_atoms, mol):
+        """Ignores charge distribution."""
         pass
 
 
 class EEM(ChargeDistributionMethod):
+    """Compute atomic partial charges via the Electrogenative Equalization (EE) method.
+
+    Methods:
+    --------
+        compute(max_order, mol, cg, atom_types, kappa, lam):
+            Computes charges via implemented charge distribution method.
+        solve(electronegativity, JMatrix, n_atoms, mol):
+            Solves system of equations.
+    """
+
     def compute(self, max_order, mol, cg, atom_types, kappa, lam):
+        """Computes charges via implemented charge distribution method.
+
+        :param max_order: (int) Max order.
+        :param mol: (Molecule) Molecule.
+        :param cg: (numpy.ndarray) Charge groups - list of list with indexes of atoms in the same charge group.
+        :param atom_types: (collections.OrderedDict) Ordered dictionary of atom types.
+        :param kappa: (float) Kappa parameter (not used here).
+        :param lam: (float) Lambda parameter (not used here).
+        :return:
+            charges: (numpy.ndarray) Computed charges.
+        """
+
         n_atoms = cg.shape[0]
         diameters, hardness, electronegativity = self.getParameters(mol, cg, atom_types)
 
         # atomic J Matrix and Coulomb integrals
         coulomb = self.coulombIntegrals(max_order, mol, n_atoms, diameters)
         JMatrix = np.diag(hardness) + coulomb
-        charges, electronegativityEq = self.solve(electronegativity, JMatrix, n_atoms, mol)
+        charges = self.solve(electronegativity, JMatrix, n_atoms, mol)
         self.assignCharges(cg, mol, charges)
         return charges
 
     def solve(self, electronegativity, JMatrix, n_atoms, mol):
+        """Solves system of equations.
+
+        :param electronegativity: (numpy.ndarray) Array of electronegativities.
+        :param JMatrix: (numpy.ndarray)
+        :param n_atoms: (int) Number of atoms.
+        :param mol: (Molecule) Molecule.
+        :return:
+            charges: (numpy.ndarray) Computed charges.
+        """
+
         # prepare augmented hardness matrix
         X = np.zeros((n_atoms + 1, n_atoms + 1,))
         X[:,:-1][:-1] = JMatrix
@@ -212,13 +399,35 @@ class EEM(ChargeDistributionMethod):
 
         res = np.linalg.solve(X, Y)
         charges = res[:-1]
-        electronegativityEq = res[-1]
+        # electronegativityEq = res[-1]
 
-        return charges, electronegativityEq
+        return charges
 
 
 class QEqAtomic(ChargeDistributionMethod):
+    """Compute atomic partial charges via the QEqAtomic method.
+
+    Methods:
+    --------
+        compute(max_order, mol, cg, atom_types, kappa, lam):
+            Computes charges via implemented charge distribution method.
+        solve(electronegativity, JMatrix, n_atoms, mol):
+            Solves system of equations.
+    """
+
     def compute(self, max_order, mol, cg, atom_types, kappa, lam):
+        """Computes charges via implemented charge distribution method.
+
+        :param max_order: (int) Max order.
+        :param mol: (Molecule) Molecule.
+        :param cg: (numpy.ndarray) Charge groups - list of list with indexes of atoms in the same charge group.
+        :param atom_types: (collections.OrderedDict) Ordered dictionary of atom types.
+        :param kappa: (float) Kappa parameter (not used here).
+        :param lam: (float) Lambda parameter (not used here).
+        :return:
+            charges: (numpy.ndarray) Computed charges.
+        """
+
         # Same as for EEM.
         n_atoms = cg.shape[0]
         diameters, hardness, electronegativity = self.getParameters(mol, cg, atom_types)
@@ -233,6 +442,16 @@ class QEqAtomic(ChargeDistributionMethod):
         return charges
 
     def solve(self, electronegativity, JMatrix, n_atoms, mol):
+        """Solves system of equations.
+
+        :param electronegativity: (numpy.ndarray) Array of electronegativities.
+        :param JMatrix: (numpy.ndarray)
+        :param n_atoms: (int) Number of atoms.
+        :param mol: (Molecule) Molecule.
+        :return:
+            charges: (numpy.ndarray) Computed charges.
+        """
+
         # prepare hardness matrix
         X = JMatrix.copy()
         X = X - X[0]
@@ -249,7 +468,27 @@ class QEqAtomic(ChargeDistributionMethod):
 
 
 class QEqBond(BondChargeDistributionMethod):
+    """Compute atomic partial charges via the QEqBond method.
+
+    Methods:
+    --------
+        compute(max_order, mol, cg, atom_types, kappa, lam):
+            Computes charges via implemented charge distribution method.
+    """
+
     def compute(self, max_order, mol, cg, atom_types, kappa, lam):
+        """Computes charges via implemented charge distribution method.
+
+        :param max_order: (int) Max order.
+        :param mol: (Molecule) Molecule.
+        :param cg: (numpy.ndarray) Charge groups - list of list with indexes of atoms in the same charge group.
+        :param atom_types: (collections.OrderedDict) Ordered dictionary of atom types.
+        :param kappa: (float) Kappa parameter.
+        :param lam: (float) Lambda parameter.
+        :return:
+            charges: (numpy.ndarray) Computed charges.
+        """
+
         n_atoms = cg.shape[0]
         net_charge = mol.net_charge
         charge_transfer_topology = mol.charge_transfer_topology
@@ -273,7 +512,27 @@ class QEqBond(BondChargeDistributionMethod):
 
 
 class AACT(BondChargeDistributionMethod):
+    """Compute atomic partial charges via the AACT method.
+
+    Methods:
+    --------
+        compute(max_order, mol, cg, atom_types, kappa, lam):
+            Computes charges via implemented charge distribution method.
+    """
+
     def compute(self, max_order, mol, cg, atom_types, kappa, lam):
+        """Computes charges via implemented charge distribution method.
+
+        :param max_order: (int) Max order.
+        :param mol: (Molecule) Molecule.
+        :param cg: (numpy.ndarray) Charge groups - list of list with indexes of atoms in the same charge group.
+        :param atom_types: (collections.OrderedDict) Ordered dictionary of atom types.
+        :param kappa: (float) Kappa parameter.
+        :param lam: (float) Lambda parameter.
+        :return:
+            charges: (numpy.ndarray) Computed charges.
+        """
+
         n_atoms = cg.shape[0]
         net_charge = mol.net_charge
         charge_transfer_topology = mol.charge_transfer_topology
@@ -301,7 +560,27 @@ class AACT(BondChargeDistributionMethod):
 
 
 class SQE (BondChargeDistributionMethod):
+    """Compute atomic partial charges via the SQE method.
+
+    Methods:
+    --------
+        compute(max_order, mol, cg, atom_types, kappa, lam):
+            Computes charges via implemented charge distribution method.
+    """
+
     def compute(self, max_order, mol, cg, atom_types, kappa, lam):
+        """Computes charges via implemented charge distribution method.
+
+        :param max_order: (int) Max order.
+        :param mol: (Molecule) Molecule.
+        :param cg: (numpy.ndarray) Charge groups - list of list with indexes of atoms in the same charge group.
+        :param atom_types: (collections.OrderedDict) Ordered dictionary of atom types.
+        :param kappa: (float) Kappa parameter.
+        :param lam: (float) Lambda parameter.
+        :return:
+            charges: (numpy.ndarray) Computed charges.
+        """
+
         n_atoms = cg.shape[0]
         net_charge = mol.net_charge
         charge_transfer_topology = mol.charge_transfer_topology
@@ -332,13 +611,53 @@ class SQE (BondChargeDistributionMethod):
 
 
 class Charge_group_type(ABC):
+    """Assigns atoms to the charge group.
+
+    Methods:
+    --------
+        setCG(mol):
+            Defines charge groups of molecule.
+    """
+
     @abstractmethod
     def setCG(self, mol):
+        """Defines charge groups of molecule.
+
+        :param mol: (Molecule) Molecule.
+        """
         pass
+
+    @staticmethod
+    def get_object(n):
+        """Returns object of class that implements base class Charge_group_type.
+
+        :param n: (str) Code for class that implements base class Charge_group_type.
+        :return: One of the classes that implements Charge_group_type.
+        """
+
+        classes = {'ATOMIC': Atomic, 'HALO': Halo, 'AA-ALK': AA_Alk, 'O_N': O_N}
+
+        if n not in classes:
+            raise myExceptions.ClassNotImplemented(n, 'ChargeDistribution.Charge_group_type')
+        cr = classes[n]()
+        return cr
 
 
 class Atomic(Charge_group_type):
+    """Defines one charge group for the whole molecule.
+
+    Methods:
+    --------
+        setCG(mol):
+            Defines charge groups of molecule.
+    """
+
     def setCG(self, mol):
+        """Defines charge groups of molecule.
+
+        :param mol: (Molecule) Molecule.
+        """
+
         CGs = []
         atoms = mol.atoms
 
@@ -352,12 +671,38 @@ class Atomic(Charge_group_type):
 
 
 class Halo(Charge_group_type):
+    """Defines charge groups for HAL family.
+
+    Methods:
+    --------
+        setCG(mol):
+            Defines charge groups of molecule.
+    """
+
     def setCG(self, mol):
+        """Defines charge groups of molecule.
+
+        :param mol: (Molecule) Molecule.
+        """
+
         mol.CGs = []
 
 
 class AA_Alk(Charge_group_type):
+    """Defines charge groups for ALK family.
+
+    Methods:
+    --------
+        setCG(mol):
+            Defines charge groups of molecule.
+    """
+
     def setCG(self, mol):
+        """Defines charge groups of molecule.
+
+        :param mol: (Molecule) Molecule.
+        """
+
         CGs = []
         atoms = mol.atoms
 
@@ -380,6 +725,14 @@ class AA_Alk(Charge_group_type):
 
 
 class O_N(Charge_group_type):
+    """Defines charge groups for O+N family.
+
+    Methods:
+    --------
+        setCG(mol):
+            Defines charge groups of molecule.
+    """
+
     RO = [100, 101, 102, 103, 104, 105, 106, 115, 116, 117, 118]
     CC_EST = [119, 120, 121, 122]
     C_EST = [102]
@@ -396,6 +749,11 @@ class O_N(Charge_group_type):
     C_double_O_amid = 18  # C=O
 
     def setCG(self, mol):
+        """Defines charge groups of molecule.
+
+        :param mol: (Molecule) Molecule.
+        """
+
         atoms = mol.atoms
 
         indexes = [[]]

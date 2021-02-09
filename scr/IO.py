@@ -1,3 +1,24 @@
+"""The IO module provides methods for general input and output handling.
+
+Methods:
+	readFile(fileName)
+	readConf(conf, fileName)
+	readConf_helper(i, lines)
+	checkInpFiles(cnf)
+	readMolData(conf)
+	readPrm(fileName)
+	readPrmNei(atomTypes, fileName)
+	readMatrix(fileName)
+	readListAtom(conf, molecules, fileName)
+	readRefBondAndAngle(fileName)
+	readRefBondAndAngle(fileName)
+	getRef(idx, lines)
+	readListBond(bnd, molecules, fileName)
+	readListAngle(ang, molecules, fileName)
+	readSymmetry(atomTypes, symTyp, fileName)
+	readSamTemplateFile(fileName)
+"""
+
 from collections import OrderedDict
 import pandas as pd
 import numpy as np
@@ -5,18 +26,23 @@ import math
 import sys
 import os
 
-
-import myExceptions, molecules_utils
-from molecule import Molecule
+import myExceptions
+import molecules_utils
 import effectiveParameter
 from iac import IAC
-from matrix import Matrix
 from atom import Atom
+from matrix import Matrix
+from molecule import Molecule
 from property import Dns, Hvp
 
 
 def readFile(fileName):
-	# print('Reading ' + fileName)
+	"""Reads lines of input file.
+
+	:param fileName: (str) Name of input file.
+	:return: (list) List with rows extracted from input file.
+	"""
+
 	with open(fileName, 'r') as f:
 		lines = f.readlines()
 	lines = [row.strip().split() for row in lines]
@@ -24,7 +50,14 @@ def readFile(fileName):
 
 
 def readConf(conf, fileName):
-	# print('reading ' + fileName)
+	"""Reads configuration file.
+
+	:param conf: (Conf) Configuration object.
+	:param fileName: (str) File name.
+	:exception
+		myExceptions.MissingKeyWordError
+	"""
+
 	confDict = {}
 
 	lines = readFile(fileName)
@@ -38,8 +71,8 @@ def readConf(conf, fileName):
 
 		elif row[0].startswith('BEGIN'):
 			i, dictName, add_data = readConf_helper(i, lines)
-			#print(dictName)
-			#print(add_data)
+			# print(dictName)
+			# print(add_data)
 			# TODO
 
 		else:
@@ -114,6 +147,16 @@ def readConf(conf, fileName):
 
 
 def readConf_helper(i, lines):
+	"""Helper function to read configuration file.
+
+	:param i: (int) Row number.
+	:param lines: (list) List of rows.
+	:return:
+		nextRow: (int) Row number of next row.
+		dictName: (str)
+		add_data: (OrderedDict)
+	"""
+
 	dictName = ''
 	add_data = OrderedDict()
 
@@ -141,6 +184,13 @@ def readConf_helper(i, lines):
 
 	
 def checkInpFiles(cnf):
+	"""Checks if input files exist.
+
+	:param cnf: (Conf) Configuration object.
+	:exception
+		myExceptions.NoSuchFile
+	"""
+
 	files = cnf.inpFiles
 	for fileName in files:
 		if not os.path.exists(fileName):
@@ -148,6 +198,13 @@ def checkInpFiles(cnf):
 
 
 def readMolData(conf):
+	"""Reads file with information about molecules.
+
+	:param conf: (Conf) Configuration object.
+	:return:
+		molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+	"""
+
 	fileName = conf.molDataFile
 	scl_dns = conf.scl_dns
 	scl_hvp = conf.scl_hvp
@@ -187,6 +244,13 @@ def readMolData(conf):
 
 
 def readPrm(fileName):
+	"""Reads parameter file.
+
+	:param fileName: (str) Input file name.
+	:return:
+		atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
+	"""
+
 	atomTypes = OrderedDict()
 	lines = readFile(fileName)
 
@@ -197,18 +261,18 @@ def readPrm(fileName):
 			if iac in atomTypes:
 				sys.exit(iac + ' is already in prm_IT.dat')
 
-			typ       = line[1]
-			sig       = float(line[2])
-			rng_sig   = float(line[3])
-			eps       = float(line[4])
-			rng_eps   = float(line[5])
-			hrd       = float(line[6])
-			rng_hrd   = float(line[7])
-			eln       = float(line[8])
-			rng_eln   = float(line[9])
-			sig_2     = float(line[10])
+			typ = line[1]
+			sig = float(line[2])
+			rng_sig = float(line[3])
+			eps = float(line[4])
+			rng_eps = float(line[5])
+			hrd = float(line[6])
+			rng_hrd = float(line[7])
+			eln = float(line[8])
+			rng_eln = float(line[9])
+			sig_2 = float(line[10])
 			rng_sig_2 = float(line[11])
-			eps_2     = float(line[12])
+			eps_2 = float(line[12])
 			rng_eps_2 = float(line[13])
 
 			atomType = IAC(iac, typ, sig, rng_sig, eps, rng_eps, hrd, rng_hrd, eln, rng_eln, sig_2, rng_sig_2, eps_2, rng_eps_2)
@@ -218,14 +282,19 @@ def readPrm(fileName):
 
 
 def readPrmNei(atomTypes, fileName):
-	# print('Reading ' + fileName)
+	"""Reads file with 1-4 parameters and adds data to atom types.
+
+	:param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
+	:param fileName: (str) Input file name.
+	"""
+
 	df = pd.read_csv(fileName, sep='\s+', comment='#', names=['iac', 'name', 'sig_nei', 'eps_nei'])
 
 	for idx, row in df.iterrows():
 		iac = str(row['iac'])
 		iac = int(iac)
 
-		if not iac in atomTypes:
+		if iac not in atomTypes:
 			continue
 
 		sig_nei = row['sig_nei']
@@ -238,6 +307,13 @@ def readPrmNei(atomTypes, fileName):
 
 
 def readMatrix(fileName):
+	"""Reads matrix file.
+
+	:param fileName: (str) Input file name.
+	:return:
+		matrix: (Matrix) Matrix with information about C12(II) usage.
+	"""
+
 	matrix = Matrix()
 	lines = readFile(fileName)
 
@@ -254,6 +330,14 @@ def readMatrix(fileName):
 
 
 def readListAtom(conf, molecules, fileName):
+	"""Reads list of atoms and add to molecules.
+
+	:param conf: (Conf) Configuration object.
+	:param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+	:param fileName: (str) Input file name.
+	:return:
+	"""
+
 	lines = readFile(fileName)
 
 	for line in lines:
@@ -274,6 +358,14 @@ def readListAtom(conf, molecules, fileName):
 
 
 def readRefBondAndAngle(fileName):
+	"""Reads reference bond and bond angles.
+
+	:param fileName: (str) Input file name.
+	:return:
+		bnd: (dict) Dictionary of reference bonds.
+		ang: (dict) Dictionary of reference bond angles.
+	"""
+
 	lines = readFile(fileName)
 
 	idx = 0
@@ -293,6 +385,12 @@ def readRefBondAndAngle(fileName):
 
 
 def getRef(idx, lines):
+	"""Extracts reference values of bond or bond angle from row.
+
+	:param idx: (int) Row number.
+	:param lines: (list) Array of rows.
+	"""
+
 	nBnd = 0
 	bnd = {}
 
@@ -314,6 +412,14 @@ def getRef(idx, lines):
 
 
 def readListBond(bnd, molecules, fileName):
+	"""Reads list of bonds of molecules,
+	and creates connectivity and distance matrices.
+
+	:param bnd: (dict) Reference bonds.
+	:param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+	:param fileName: (str) Input file name.
+	"""
+
 	lines = readFile(fileName)
 	lines = np.asarray(lines)
 
@@ -322,7 +428,7 @@ def readListBond(bnd, molecules, fileName):
 
 		if mol.run:
 			mol_rows = np.where(lines == cod)
-			mol_bonds = lines[mol_rows[0],1:]
+			mol_bonds = lines[mol_rows[0], 1:]
 
 			mol_bonds = mol_bonds.astype(object)
 			for i in range(mol_bonds.shape[0]):
@@ -330,8 +436,8 @@ def readListBond(bnd, molecules, fileName):
 				bond_dist = bnd[bond_type]
 				mol_bonds[i, -1] = bond_dist
 
-			mol_bonds[:,0:2] = mol_bonds[:,0:2].astype(int) - 1
-			mol_bonds[:,-1] = mol_bonds[:,-1].astype(float)
+			mol_bonds[:, 0:2] = mol_bonds[:, 0:2].astype(int) - 1
+			mol_bonds[:, -1] = mol_bonds[:, -1].astype(float)
 
 			n_atoms = mol.nAtoms()
 			connectivity = np.zeros([n_atoms, n_atoms], dtype=bool)
@@ -353,6 +459,14 @@ def readListBond(bnd, molecules, fileName):
 
 
 def readListAngle(ang, molecules, fileName):
+	"""Reads list of angles
+	and updates distance matrix.
+
+	:param ang: (dict) Reference bond angles.
+	:param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+	:param fileName: (str) Input file name.
+	"""
+
 	lines = readFile(fileName)
 
 	for line in lines:
@@ -375,7 +489,7 @@ def readListAngle(ang, molecules, fileName):
 					bond_1_2 = mol.are_bonded(idx1, idx2)
 					bond_2_3 = mol.are_bonded(idx2, idx3)
 
-					if (bond_1_2 is False) or (bond_2_3 is False ):
+					if (bond_1_2 is False) or (bond_2_3 is False):
 						sys.exit('Problem while reading list of angles: Atom {} is not a central atom'.format(atm2.nam))
 
 					d1 = mol.get_bond_distance(idx1, idx2)
@@ -387,6 +501,16 @@ def readListAngle(ang, molecules, fileName):
 
 
 def readSymmetry(atomTypes, symTyp, fileName):
+	"""Reads symmetry file
+	and mark parameters as symmetric.
+	Symmetric parameters are optimized as one.
+
+	:param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
+	:param symTyp: (str) Code for type of symmetry (sig or eps).
+	:param fileName: (str) Input file name.
+	:return:
+	"""
+
 	if not os.path.exists(fileName):
 		return
 
@@ -402,7 +526,7 @@ def readSymmetry(atomTypes, symTyp, fileName):
 				sys.exit('\n\tWrong value for symmetry: {} \
 				\n\tIt should be uppercase\n'.format(sym))
 
-			if not iac in atomTypes:
+			if iac not in atomTypes:
 				sys.exit('\n\tIAC = {} not found in prms.dat\n'.format(iac))
 
 			if typ != atomTypes[iac].typ:
@@ -412,7 +536,12 @@ def readSymmetry(atomTypes, symTyp, fileName):
 
 
 def readSamTemplateFile(fileName):
+	"""Reads sam template file.
+
+	:param fileName: (str) Input file name.
+	:return:
+		lines: (list) List with rows.
+	"""
+
 	lines = readFile(fileName)
 	return lines
-
-

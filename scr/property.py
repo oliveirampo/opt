@@ -1,3 +1,12 @@
+"""Module for property object.
+
+Classes:
+    Property
+    Dns
+    Hvp
+"""
+
+
 import numpy as np
 
 
@@ -5,7 +14,30 @@ import ana
 
 
 class Property:
+    """Base class for property object.
+
+    Attributes:
+        _code: (str) Molecule code.
+        _unit: (str) Unit of measurement.
+        _scale: Scale factor.
+        _wei: Weight.
+        _ref: Reference (experimental) value.
+        _trajectory: (ndarray) Instantaneous values of simulation results.
+        _runningAverages: (list) Running averages of all jobs.
+        _sim: (float) Simulated result.
+        _maxDev: (float) Maximum deviation among simulation results of different jobs.
+    """
+
     def __init__(self, code, unit, scale, wei, ref):
+        """Constructs all the necessary attributes for the property.
+
+        :param code: (str) Molecule code.
+        :param unit: (str) Unit of measurement.
+        :param scale: Scale factor.
+        :param wei: Weight.
+        :param ref: Reference (experimental) value.
+        """
+
         self._code = code
         self._unit = unit
         self._scale = scale
@@ -77,10 +109,28 @@ class Property:
 
 
 class Dns(Property):
+    """Density property."""
+
     def __init__(self, scale, wei, ref):
+        """Constructs all the necessary attributes for this property.
+
+        :param scale: Scale factor.
+        :param wei: Weight.
+        :param ref: Reference (experimental) value.
+        """
+
         super().__init__('D', 'kg/m^3', scale, wei, ref)
 
 
 class Hvp(Property):
+    """Vaporization enthalpy property."""
+
     def __init__(self, scale, wei, ref):
+        """Constructs all the necessary attributes for this property.
+
+        :param scale: Scale factor.
+        :param wei: Weight.
+        :param ref: Reference (experimental) value.
+        """
+
         super().__init__('H', 'kJ/mol', scale, wei, ref)

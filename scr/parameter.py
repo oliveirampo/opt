@@ -1,5 +1,38 @@
+"""Module for Parameter object.
+
+Classes:
+	Parameter
+"""
+
 class Parameter:
+	"""Defines a parameter object.
+
+	Attributes:
+		_iac: (int) Atom type index.
+		_typ: (float) Type of parameter.
+		_rng: (float) Range of parameter variation.
+		_ori: (float) Original value of parameter.
+		_prev: (float) Previous value of parameter.
+		_cur: (float) Current value of parameter.
+		_min: (float) Minimal value of parameter.
+		_max: (float) Maximal value of parameter.
+		_symmetry = (str) Symmetry (code) of parameter.
+
+	Methods:
+		hasSymmetricIAC()
+	"""
+
 	def __init__(self, iac, typ, rng, ori, prev, cur):
+		"""Constructs all the necessary attributes for the parameter.
+
+		:param iac: (int) Atom type index.
+		:param typ: (float) Type of parameter.
+		:param rng: (float) Range of parameter variation.
+		:param ori: (float) Original value of parameter.
+		:param prev: (float) Previous value of parameter.
+		:param cur: (float) Current value of parameter.
+		"""
+
 		self._iac = iac
 		self._typ = typ
 		self._rng = float(rng)
@@ -63,4 +96,6 @@ class Parameter:
 		self._symmetry = val
 
 	def hasSymmetricIAC(self):
+		"""Checks if parameters has a symmetric parameter."""
+
 		return self._symmetry != ''

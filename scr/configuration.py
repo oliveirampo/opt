@@ -10,7 +10,6 @@ import sys
 import ChargeDistribution
 from matrix import Matrix
 import combiningRule
-import myExceptions
 import IO
 
 
@@ -298,9 +297,7 @@ class Conf:
 
     @cr.setter
     def cr(self, n):
-        classes = {"GEOM": combiningRule.GeometricCR, "WH": combiningRule.WaldmanHagler,
-                   "LB": combiningRule.LorentzBerthelot, "FH": combiningRule.FenderHalsey}
-        cR = classes[n]()
+        cR = combiningRule.CR.get_object(n)
         self._cr = cR
 
     @matrix.setter
@@ -309,26 +306,13 @@ class Conf:
 
     @charge_distribution_method.setter
     def charge_distribution_method(self, n):
-        classes = {'NONE': ChargeDistribution.NONE, 'EEM': ChargeDistribution.EEM,
-                   'QEqAtomic': ChargeDistribution.QEqAtomic, 'QEqBond': ChargeDistribution.QEqBond,
-                   'AACT': ChargeDistribution.AACT, 'SQE': ChargeDistribution.SQE}
-
-        if n not in classes:
-            raise myExceptions.ClassNotImplemented(n, 'configuration')
-
-        charge_distribution = classes[n]()
-        self._charge_distribution_method = charge_distribution
+        method = ChargeDistribution.ChargeDistributionMethod.get_object(n)
+        self._charge_distribution_method = method
 
     @charge_group_type.setter
     def charge_group_type(self, n):
-        classes = {'ATOMIC': ChargeDistribution.Atomic, 'HALO': ChargeDistribution.Halo,
-                   'AA-ALK': ChargeDistribution.AA_Alk, 'O_N': ChargeDistribution.O_N}
-
-        if n not in classes:
-            raise myExceptions.ClassNotImplemented(n, 'configuration')
-
-        charge_group = classes[n]()
-        self._charge_group_type = charge_group
+        method = ChargeDistribution.Charge_group_type.get_object(n)
+        self._charge_group_type = method
 
     @kappa.setter
     def kappa(self, n):

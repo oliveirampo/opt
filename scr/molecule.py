@@ -1,3 +1,9 @@
+"""Module for molecule object.
+
+Classes:
+	Molecule
+"""
+
 import pandas as pd
 import numpy as np
 import sys
@@ -6,13 +12,70 @@ from effectiveParameter import C6
 from effectiveParameter import C12
 from effectiveParameter import NEI
 from effectiveParameter import NRM
-import parameter_utils, effectiveParameter
+import parameter_utils
+import effectiveParameter
 from sensitivity import Sensitivity
 from ChargeDistribution import BondChargeDistributionMethod
 
 
 class Molecule:
+	"""Defines a molecule object.
+
+	Attributes:
+		_cod: (str) Code.
+		_frm: (str) Formula.
+		_run: (bool) Flag to consider or not the molecule.
+		_pre_sim: (float) Pressure of simulation.
+		_tem_sim: (float) Temperature of simulation.
+		_properties: (list) List of properties.
+		_mlp_ref: (float) Melting point.
+		_blp_ref: (float) Boiling point.
+		_eps_ref: (float) Permittivity.
+
+		_atoms = {}
+		_connectivity: (numpy.ndarray) Connectivity matrix of booleans.
+		_distance_matrix: (numpy.ndarray) Distance matrix.
+		_charge_transfer_topology: (numpy.ndarray)
+		_bond_hardness: (numpy.ndarray)
+		_CGs: (numpy.ndarray) Charge groups - list of list with indexes of atoms in the same charge group.
+		_net_charge: (float) Net charge.
+		_parameters: (list) List of parameters.
+
+		_sens: (Sensitivity) Sensitivity matrix.
+
+	Methods:
+		get_bond_hardness(self, hardness)
+		createChargeTransferTopology()
+		addAtom(atom, conf)
+		getAtom(self, idx)
+		checkAtoms()
+		nAtoms()
+		are_bonded( idx1, idx2)
+		get_bond_distance(idx1, idx2)
+		add_bond_distance(idx1, idx2, distance)
+		get_neighbors_of_atom(idx1)
+		createEffectiveAtomicCharges()
+		createLJPairs(atomTypes)
+		writePrmMod(f)
+		addTrajectory(letter, traj)
+		addRunningAverages(propCode, avgs)
+		getNumProps()
+	"""
+
 	def __init__(self, cod, frm, run, pre_sim, tem_sim, properties, mlp_ref, blp_ref, eps_ref):
+		"""Constructs all the necessary attributes for the molecule.
+
+		:param cod: (str) Code.
+		:param frm: (str) Formula.
+		:param run: (bool) Flag to consider or not the molecule.
+		:param pre_sim: (float) Pressure of simulation.
+		:param tem_sim: (float) Temperature of simulation.
+		:param properties: (list) List of properties.
+		:param mlp_ref: (float) Melting point.
+		:param blp_ref: (float) Boiling point.
+		:param eps_ref: (float) Permittivity.
+		"""
+
 		self._cod = cod
 		self._frm = frm
 
@@ -138,7 +201,14 @@ class Molecule:
 		self._sens = df
 
 	def get_bond_hardness(self, hardness):
-		# assume bond hardnesses = sum of atomic hardnesses
+		"""Returns bond hardness.
+		Assume bond hardnesses = sum of atomic hardnesses
+
+		:param hardness: (ndarray) List of hardness.
+		:return:
+			bondHardness: (ndarray) bond hardness.
+		"""
+
 		charge_transfer_topology = self._charge_transfer_topology
 
 		bVars, B = BondChargeDistributionMethod.bondVars(charge_transfer_topology)
@@ -150,11 +220,19 @@ class Molecule:
 		return bondHardness
 
 	def createChargeTransferTopology(self):
+		"""Creates charge transfer topology."""
+
 		chargeTransferFilter = lambda x: 1 if x else 0
 		chargeTransferTopology = np.vectorize(chargeTransferFilter)(self.connectivity)
 		self._charge_transfer_topology = chargeTransferTopology
 
 	def addAtom(self, atom, conf):
+		"""Adds atom to dictionary of atoms of molecule.
+
+		:param atom: (Atom)
+		:param conf: (configuration.Conf) Configuration object.
+		"""
+
 		try:
 			idx = atom.idx
 		except KeyError:
@@ -166,38 +244,81 @@ class Molecule:
 		self._atoms[idx] = atom
 
 	def getAtom(self, idx):
+		"""Returns atom by index.
+
+		:param idx: (idx) Index of atom in molecule.
+		:return:
+			atom: (Atom)
+		"""
+
 		return self._atoms[idx]
 
 	def checkAtoms(self):
+		"""Checks if dictionary of atoms is not empty. Stops pipeline if this is the case."""
+
 		if len(self._atoms) == 0:
 			sys.exit('No atoms were found for {}'.format(self._cod))
 
 	def nAtoms(self):
+		"""Returns number of atoms in molecule."""
+
 		return len(self._atoms)
 
 	def are_bonded(self, idx1, idx2):
+		"""Checks if two atoms are connected given their indexes.
+
+		:param idx1: (int) Index of atom 1.
+		:param idx2: (int) Index of atom 2.
+		:return:
+			:(boolean) True or False.
+		"""
+
 		pos1 = idx1 - 1
 		pos2 = idx2 - 1
 		return self._connectivity[pos1, pos2]
 
 	def get_bond_distance(self, idx1, idx2):
+		"""Returns bond distance between two atoms given their indexes.
+
+		:param idx1: (int) Index of atom 1.
+		:param idx2: (int) Index of atom 2.
+		:return:
+			distance: (float) Distance between two atoms.
+		"""
+
 		pos1 = idx1 - 1
 		pos2 = idx2 - 1
 		return self._distance_matrix[pos1, pos2]
 
 	def add_bond_distance(self, idx1, idx2, distance):
+		"""Adds bond distance between two atoms to distance matrix.
+
+		:param idx1: (int) Index of atom 1.
+		:param idx2: (int) Index of atom 2.
+		:param distance: (numpy.ndarray) Distance matrix.
+		"""
+
 		pos1 = idx1 - 1
 		pos2 = idx2 - 1
 		self._distance_matrix[pos1, pos2] = distance
 		self._distance_matrix[pos2, pos1] = distance
 
 	def get_neighbors_of_atom(self, idx1):
+		"""Returns list with indexes of neighbors.
+
+		:param idx1: (int) Index of atom 1.
+		:return:
+			neighbors_indexes: (numpy.ndarray) List of indexes of neighbors.
+		"""
+
 		pos1 = idx1 - 1
 		neighbors_indexes = np.where(self._connectivity[pos1, :])
 		neighbors_indexes = neighbors_indexes[0] + 1
 		return neighbors_indexes
 
 	def createEffectiveAtomicCharges(self):
+		"""Creates (Parameter) charges, and adds them to list of parameters of given molecule."""
+
 		atoms = self._atoms
 		for idx in atoms:
 			atom = atoms[idx]
@@ -205,6 +326,11 @@ class Molecule:
 			self._parameters.append(charge)
 
 	def createLJPairs(self, atomTypes):
+		"""Creates (Parameter) LJ pairs, and add them to list of parameters of given molecule.
+
+		:param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
+		"""
+
 		iacList = []
 		for idx in self._atoms:
 			iac = self._atoms[idx].iac
@@ -245,18 +371,38 @@ class Molecule:
 			idx += 1
 
 	def writePrmMod(self, f):
+		"""Writes param.mod file.
+
+		:param f: (str) Output file name.
+		:return:
+		"""
+
 		for prm in self._parameters:
 			prm.writePrm(f)
 
 	def addTrajectory(self, letter, traj):
+		"""Extracts instantaneous values of simulation results and adds them to property.
+
+		:param letter: (str) Property letter.
+		:param traj: (ndarray) Instantaneous values of simulation results.
+		"""
+
 		for prop in self._properties:
 			if letter == prop.letter:
 				prop.trajectory = traj
 
 	def addRunningAverages(self, propCode, avgs):
+		"""Extracts running averages of simulation results and adds them to property.
+
+		:param propCode: (str) Code of property.
+		:param avgs: (list) Running averages of simulation results.
+		"""
+
 		for prop in self._properties:
 			if propCode == prop.code:
 				prop.runningAverages = avgs
 
 	def getNumProps(self):
+		"""Returns number of properties."""
+
 		return len(self._properties)

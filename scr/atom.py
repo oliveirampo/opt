@@ -1,7 +1,22 @@
+"""Atom class.
 
+Classes:
+--------
+	Atom
+"""
 
 class Atom:
+	"""Atom class."""
+
 	def __init__(self, idx, nam, iac, charge):
+		"""Constructs all the necessary attributes for the given atom.
+
+		:param idx: (int) Index.
+		:param nam: (str) Name
+		:param iac: (int) Atom type index.
+		:param charge: (Charge) Charge of atom.
+		"""
+
 		self._idx = int(idx)
 		self._nam = nam
 		self._iac = int(iac)

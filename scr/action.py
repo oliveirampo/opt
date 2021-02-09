@@ -1,6 +1,7 @@
 """Implementation of the possible options that the pipeline can execute.
 
 Classes:
+--------
 	Action
 	Gen(Action)
 	Ana(Action)
@@ -18,6 +19,7 @@ import ana
 import optimize
 import writeOutFiles
 import molecules_utils
+import myExceptions
 
 
 class Action(ABC):
@@ -32,6 +34,8 @@ class Action(ABC):
 
 	Methods
 	-------
+	get_choices(): Returns list of possible choices of actions.
+	get_object(runType, it): Returns object of class that implements base class Action.
 	read_inp_files(conf): Reads input files.
 	run(conf, molecules, atomTypes): Executes option.
 	"""
@@ -42,6 +46,30 @@ class Action(ABC):
 		:param it: (int) Iteration number.
 		"""
 		self.it = it
+
+	@staticmethod
+	def get_choices():
+		"""Returns list of possible choices of actions."""
+
+		return ['GEN', 'ANA','OPT','PLOT']
+
+	@staticmethod
+	def get_object(runType, it):
+		"""Returns object of class that implements base class Action.
+
+		:param runType: (str) Code for class that implements base class Action.
+		:parameter it: (str) Iteration number.
+		:return: One of the classes that implements Action.
+		"""
+
+		classes = {"GEN": Gen, "ANA": Ana, "OPT": Opt}
+
+		if runType not in classes:
+			raise myExceptions.ClassNotImplemented(runType, 'Action')
+
+		act = classes[runType](it)
+
+		return act
 
 	@staticmethod
 	def read_inp_files(conf):

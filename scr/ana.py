@@ -1,3 +1,20 @@
+"""Performs analysis of the simulation results.
+
+Methods:
+--------
+    runAna(conf, molecules, anaDir):
+    addSimprop(conf, mol):
+    addSens(conf, mol):
+    getMaxDev(prop):
+    writeAllFile(mol, out):
+    writeAllSum(mol, allSum):
+    writeResFile(mol, out):
+    writeMolData(mol, out):
+    getExpSimData(molecules):
+    writeRmsd(df, out):
+    getRmsd(prop, df):
+"""
+
 import pandas as pd
 import numpy as np
 import sys
@@ -9,6 +26,20 @@ from sensitivity import Sensitivity
 
 
 def runAna(conf, molecules, anaDir):
+    """Runs analysis of simulation results and writes to txt file.
+
+    :param conf: (configuration.Conf) Configuration object.
+    :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+    :param anaDir: (float) Directory for analysis results.
+
+    The files created are:
+        - allOutFile: Summary of ensemble averages.
+        - allSumFile: Summary of simulation results.
+        - resFile: Summary of sensitivity results.
+        - newMolFile: List of molecules that did not vaporize.
+        - rmsdFile: Root-mean-square deviations.
+    """
+
     it = conf.it
     allOutFile = anaDir + '/all_' + str(it) + '.out'
     allSumFile = anaDir + '/all_sum_' + str(it) + '.out'
@@ -43,6 +74,12 @@ def runAna(conf, molecules, anaDir):
 
 
 def addSimprop(conf, mol):
+    """Extracts ensemble averages from simulation results and saves into molecule object.
+
+    :param conf: (configuration.Conf) Configuration object.
+    :param mol: (Molecule) Molecule.
+    """
+
     nJobs = conf.nJobs
     it = conf.it
     cod = mol.cod
@@ -96,6 +133,12 @@ def addSimprop(conf, mol):
 
 
 def addSens(conf, mol):
+    """Extracts sensitivities from simulation results and saves into molecule object.
+
+    :param conf: (configuration.Conf) Configuration object.
+    :param mol: (Molecule) Molecule.
+    """
+
     cod = mol.cod
     it = conf.it
     nJobs = conf.nJobs
@@ -161,6 +204,12 @@ def addSens(conf, mol):
 
 
 def getMaxDev(prop):
+    """Gets maximum deviation from array of values.
+
+    :param prop: (list, arr) Array of values.
+    :return: (float) Maximum deviation.
+    """
+
     maxDev = 0.0
     for i in range(len(prop)):
         for j in range(i, len(prop)):
@@ -173,6 +222,13 @@ def getMaxDev(prop):
 
 
 def writeAllFile(mol, out):
+    """Writes summary of ensemble averages.
+
+    :param mol: (Molecule) Molecule.
+    :param out: (output object) Output file.
+    :return:
+    """
+
     cod = mol.cod
 
     frm = mol.frm
@@ -196,14 +252,19 @@ def writeAllFile(mol, out):
 
 
 def writeAllSum(mol, allSum):
+    """Writes summary of simulation results.
+
+    :param mol: (Molecule) Molecule.
+    :param allSum: (output object) Output file.
+    """
+
     cod = mol.cod
     frm = mol.frm
     run = mol.run
     pre_sim = mol.pre_sim
     tem_sim = mol.tem_sim
 
-    allSum.write('{:6} {:12} {:3} {:7.3f} {:5.0f} {} '
-    .format(cod, frm, run, pre_sim, tem_sim, '/'))
+    allSum.write('{:6} {:12} {:3} {:7.3f} {:5.0f} {} '.format(cod, frm, run, pre_sim, tem_sim, '/'))
 
     properties = mol.properties
     for prop in properties:
@@ -234,12 +295,24 @@ def writeAllSum(mol, allSum):
 
 
 def writeResFile(mol, out):
+    """Writes summary of sensitivity results.
+
+    :param mol: (Molecule) Molecule.
+    :param out: (output object) Output file.
+    """
+
     cod = mol.cod
     sens = mol.sens
     sens.writeResFile(cod, out)
 
 
 def writeMolData(mol, out):
+    """Writes list of molecules that did not vaporize.
+
+    :param mol: (Molecule) Molecule.
+    :param out: (output object) Output file.
+    """
+
     cod = mol.cod
     frm = mol.frm
     run = mol.run
@@ -278,6 +351,12 @@ def writeMolData(mol, out):
 
 
 def getExpSimData(molecules):
+    """Extracts experimental and simulated data and save into DataFrame.
+
+    :param molecules: (Molecule) Molecule.
+    :return:
+        df: (DataFrame) Table with experimental and simulated results.
+    """
     # get number of molecules
     # get number of data points for each property
 
@@ -311,6 +390,12 @@ def getExpSimData(molecules):
 
 
 def writeRmsd(df, out):
+    """Writes root-mean-square deviations to txt file.
+
+    :param df: (DataFrame) Table with main results.
+    :param out: (output object) Output file.
+    """
+
     propLetters = []
     for col in df.columns[1:]:
         letter = col.split('_')[-1]
@@ -364,6 +449,13 @@ def writeRmsd(df, out):
 
 
 def getRmsd(prop, df):
+    """Computes root-mean-square deviations.
+
+    :param prop:
+    :param df: (DataFrame) Table with main results.
+    :return:
+    """
+
     # prop_avg = np.mean(df[['ref_{}'.format(prop)]]).values[0]
     # rmsd = np.sqrt(np.mean(df[['diff2_{}'.format(prop)]], axis=1)).values[0]
     # aved = np.mean(df[['diff_{}'.format(prop)]], axis=1).values[0]
