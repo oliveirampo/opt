@@ -8,12 +8,12 @@ import myExceptions, inpParser
 def main():
 	"""
 	Pipeline to run optimization of force-field parameters.
-	These are the options:
-	GEN: generates param.mod files to run simulations.
-	ANA: performs analysis of the simulation results.
-	OPT: optimizes force-field parameters.
-	SUB: submits jobs to run on euler (https://scicomp.ethz.ch/wiki/Main_Page).
-	PLOT: plots main simulation results.
+	The options are:
+		GEN: generates param.mod files to run simulations.
+		ANA: performs analysis of the simulation results.
+		OPT: optimizes force-field parameters.
+		SUB: submits jobs to run on euler (https://scicomp.ethz.ch/wiki/Main_Page).
+		PLOT: plots main simulation results.
 	"""
 
 	try:

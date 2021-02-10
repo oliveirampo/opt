@@ -164,6 +164,7 @@ def addSens(conf, mol):
                 sensitivities[propCod][i] = dat
 
                 if len(sensitivities) == 1:
+                    # Adds information about parameters to DataFrame.
                     sens.addPrmInfo(dat['typ'], dat['idx1'], dat['idx2'], dat['nam1'], dat['nam2'], dat['val'])
 
             else:

@@ -37,13 +37,15 @@ def runOptimization(conf, molecules, atomTypes):
     - Minimize parameters.
     """
 
-    molecules_utils.computeEEM(conf.charge_distribution_method, molecules, atomTypes)
-    updateEffectivePrm(conf.cr, conf.charge_distribution_method, conf.matrix, molecules, atomTypes)
+    molecules_utils.computeChargeDistribution(conf.charge_distribution_method, molecules, atomTypes, conf.kappa, conf.lam)
+
+    updateEffectivePrm(conf.cr, conf.charge_distribution_method, conf.kappa, conf.lam, conf.matrix, molecules, atomTypes)
 
     updateOirginalParameterValues(molecules)
 
     # get simulated results
     addSimProp(conf, molecules)
+    sys.exit(123)
 
     prmsToOptmize = getParametersToBeOptimized(atomTypes)
 
@@ -213,7 +215,8 @@ def minimize(conf, init, prmsToOptmize, atomTypes, molecules):
     :param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
     :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
     """
-
+    kappa = conf.kappa
+    lam = conf.lam
     eem = conf.charge_distribution_method
     matrix = conf.matrix
     cr = conf.cr
@@ -221,7 +224,7 @@ def minimize(conf, init, prmsToOptmize, atomTypes, molecules):
     scl_sig_NEI = conf.scl_sig_NEI
     scl_eps_NEI = conf.scl_eps_NEI
 
-    minimizer_kwargs = (prmsToOptmize, atomTypes, cr, eem, matrix, molecules, {'Nfeval': 0})
+    minimizer_kwargs = (prmsToOptmize, atomTypes, cr, eem, kappa, lam, matrix, molecules, {'Nfeval': 0})
     option = {'disp': True, 'maxiter': opt_nit}
 
     # x_fnc = targetFunction(init, prmsToOptmize, atomTypes, cr, eem, matrix, molecules, {'Nfeval':0})
@@ -229,7 +232,7 @@ def minimize(conf, init, prmsToOptmize, atomTypes, molecules):
     print(ret)
 
 
-def targetFunction(init, prmsToOptmize, atomTypes, cr, eem, matrix, molecules, info):
+def targetFunction(init, prmsToOptmize, atomTypes, cr, eem, kappa, lam, matrix, molecules, info):
     """Computes target function given value of parameters.
 
     :param init: (list) List with initial guess of parameter values.
@@ -245,7 +248,7 @@ def targetFunction(init, prmsToOptmize, atomTypes, cr, eem, matrix, molecules, i
     """
 
     updatePrm(init, prmsToOptmize)
-    updateEffectivePrm(cr, eem, matrix, molecules, atomTypes)
+    updateEffectivePrm(cr, eem, kappa, lam, matrix, molecules, atomTypes)
 
     x_fnc = 0.0
     x_sum = 0.0
@@ -316,7 +319,7 @@ def updatePrm(init, prmsToOptmize):
                 init[i] = prm.max
 
 
-def updateEffectivePrm(cr, eem, matrix, molecules, atomTypes):
+def updateEffectivePrm(cr, eem, kappa, lam, matrix, molecules, atomTypes):
     """Updated values of effective parameters for each molecule.
 
     :param cr: (combiningRule) Combining rule.
@@ -327,5 +330,5 @@ def updateEffectivePrm(cr, eem, matrix, molecules, atomTypes):
     :return:
     """
 
-    molecules_utils.computeEEM(eem, molecules, atomTypes)
+    molecules_utils.computeChargeDistribution(eem, molecules, atomTypes, kappa, lam)
     molecules_utils.computeCR(cr, molecules, atomTypes, matrix)

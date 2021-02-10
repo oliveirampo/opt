@@ -1,3 +1,14 @@
+"""The IO module provides methods for general output handling.
+
+Methods:
+    copyCOTO(molecules)
+    writeMolFile(it, molecules)
+    writeSamFile(conf, molecules, samTemplate)
+    writeParamMod(it, molecules)
+    writeSubScript(conf, molecules)
+"""
+
+
 from shutil import copyfile
 import os
 
@@ -6,6 +17,12 @@ import myExceptions
 
 
 def copyCOTO(molecules):
+    """Makes copies of configurations for each molecule.
+    These configurations will be used as input to run simulations.
+
+    :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+    """
+
     cfgDir = 'cfg/'
     if not os.path.exists(cfgDir):
         os.makedirs(cfgDir)
@@ -20,6 +37,12 @@ def copyCOTO(molecules):
 
 
 def writeMolFile(it, molecules):
+    """Writes file with information about molecule.
+
+    :param it: (int) Iteration number.
+    :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+    """
+
     samDir = 'sam_' + str(it)
     if not os.path.exists(samDir):
         os.makedirs(samDir)
@@ -43,6 +66,13 @@ def writeMolFile(it, molecules):
 
 
 def writeSamFile(conf, molecules, samTemplate):
+    """Writes SAM files.
+
+    :param conf: (configuration.Conf) Configuration object.
+    :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+    :param samTemplate: (array) Rows from the template SAM file.
+    """
+
     it = conf.it
     nJobs = conf.nJobs
 
@@ -92,6 +122,12 @@ def writeSamFile(conf, molecules, samTemplate):
 
 
 def writeParamMod(it, molecules):
+    """Writes param.mod file.
+
+    :param it: (int) Iteration number.
+    :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+    """
+
     prmDir = 'prm_{}'.format(it)
     if not os.path.exists(prmDir):
         os.makedirs(prmDir)
@@ -109,6 +145,12 @@ def writeParamMod(it, molecules):
 
 
 def writeSubScript(conf, molecules):
+    """Writes submission files.
+
+    :param conf: (configuration.Conf) Configuration object.
+    :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+    """
+
     it = conf.it
     nJobs = conf.nJobs
     wall_time = conf.wall_time
@@ -137,7 +179,4 @@ def writeSubScript(conf, molecules):
     for cod in molecules:
         submitFile = 'sub_{}/{}_{}_sub.sh'.format(it, cod, 0)
         cmd = '../scr/bsub.sh {} {} {} {}'.format(cod, it, 0, wall_time)
-        #os.system(cmd)
-
-
-
+        # os.system(cmd)

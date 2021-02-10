@@ -1,4 +1,4 @@
-"""The IO module provides methods for general input and output handling.
+"""The IO module provides methods for general input handling.
 
 Methods:
 	readFile(fileName)
