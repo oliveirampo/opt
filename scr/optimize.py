@@ -17,8 +17,9 @@ Methods:
 """
 
 from scipy import optimize
+import shutil
 import sys
-
+import os
 
 import molecules_utils
 import ana
@@ -31,28 +32,38 @@ def runOptimization(conf, molecules, atomTypes):
     :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
     :param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
 
-    - Compute charge distribution for each molecule.
-    - Update values of effective parameters for each molecule.
+    - Computes charge distribution for each molecule.
+    - Updates values of effective parameters for each molecule.
     - Extracts ensemble averages ans sensitivities from simulation results.
-    - Minimize parameters.
+    - Minimizes parameters.
     """
 
-    molecules_utils.computeChargeDistribution(conf.charge_distribution_method, molecules, atomTypes, conf.kappa, conf.lam)
+    charge_method = conf.charge_distribution_method
 
-    updateEffectivePrm(conf.cr, conf.charge_distribution_method, conf.kappa, conf.lam, conf.matrix, molecules, atomTypes)
+    molecules_utils.computeChargeDistribution(charge_method, molecules, atomTypes, conf.kappa, conf.lam)
+
+    updateEffectivePrm(conf.cr, conf.scl_sig_NEI, conf.scl_eps_NEI, charge_method, conf.kappa, conf.lam, conf.matrix,
+                       molecules, atomTypes)
 
     updateOirginalParameterValues(molecules)
 
     # get simulated results
     addSimProp(conf, molecules)
-    sys.exit(123)
 
     prmsToOptmize = getParametersToBeOptimized(atomTypes)
 
     # set min/max values and return initial values
     init = setMinMax(conf, prmsToOptmize)
 
-    minimize(conf, init, prmsToOptmize, atomTypes, molecules)
+    optDir = conf.optDir
+    # remove optDir/ if it already exists, and create a new one.
+    if os.path.exists(optDir):
+        shutil.rmtree(optDir)
+    os.makedirs(optDir)
+
+    optOutFile = conf.optOutFile
+    with open(optOutFile, 'w') as optOut:
+        minimize(conf, init, prmsToOptmize, atomTypes, molecules, optOut)
 
 
 def testParameter(prmsToOptmize):
@@ -66,7 +77,7 @@ def testParameter(prmsToOptmize):
 
 
 def updateOirginalParameterValues(molecules):
-    """Updated original values of parameters to their respective current values.
+    """Updates original values of parameters to their respective current values.
 
     :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
     """
@@ -206,7 +217,7 @@ def setMinMax(conf, prmsToOptmize):
     return init
 
 
-def minimize(conf, init, prmsToOptmize, atomTypes, molecules):
+def minimize(conf, init, prmsToOptmize, atomTypes, molecules, optOut):
     """Minimizes target function.
 
     :param conf: (configuration.Conf) Configuration object.
@@ -214,6 +225,7 @@ def minimize(conf, init, prmsToOptmize, atomTypes, molecules):
     :param prmsToOptmize: (list) List of parameters to be optimized.
     :param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
     :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+    :param optOut: (output object) Output for optimization results.
     """
     kappa = conf.kappa
     lam = conf.lam
@@ -224,31 +236,44 @@ def minimize(conf, init, prmsToOptmize, atomTypes, molecules):
     scl_sig_NEI = conf.scl_sig_NEI
     scl_eps_NEI = conf.scl_eps_NEI
 
-    minimizer_kwargs = (prmsToOptmize, atomTypes, cr, eem, kappa, lam, matrix, molecules, {'Nfeval': 0})
+    minimizer_kwargs = (prmsToOptmize, atomTypes, cr, scl_sig_NEI, scl_eps_NEI, eem, kappa, lam, matrix, molecules,
+                        {'Nfeval': 0}, optOut)
     option = {'disp': True, 'maxiter': opt_nit}
 
-    # x_fnc = targetFunction(init, prmsToOptmize, atomTypes, cr, eem, matrix, molecules, {'Nfeval':0})
+    # x_fnc = targetFunction(init, prmsToOptmize, atomTypes, cr, , scl_sig_NEI, scl_eps_NEI eem, matrix, molecules,
+    # {'Nfeval':0})
     ret = optimize.minimize(targetFunction, init, args=minimizer_kwargs, options=option, method='Nelder-Mead')
     print(ret)
 
+    outPrmFile = conf.outPrmFile
 
-def targetFunction(init, prmsToOptmize, atomTypes, cr, eem, kappa, lam, matrix, molecules, info):
+    writePrm(ret.x, prmsToOptmize, atomTypes, matrix, cr, scl_sig_NEI, scl_eps_NEI, eem, kappa, lam, molecules,
+             outPrmFile)
+
+
+def targetFunction(init, prmsToOptmize, atomTypes, cr, scl_sig_NEI, scl_eps_NEI, eem, kappa, lam, matrix, molecules,
+                   info, optOut):
     """Computes target function given value of parameters.
 
     :param init: (list) List with initial guess of parameter values.
     :param prmsToOptmize: (list) List of parameters to be optimized.
     :param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
     :param cr: (combiningRule) Combining rule.
+    :param scl_sig_NEI: (float) Scaling factor for 1-4 sigma.
+    :param scl_eps_NEI: (float) Scaling factor for 1-4 epsilon.
     :param eem: (ChargeDistributionMethod) Charge distribution method.
+    :param kappa: (float) Kappa parameter used in charge distribution method.
+    :param lam (float) Lambda parameter used in charge distribution method.
     :param matrix: (Matrix) Matrix with usage of C12(II) parameter.
     :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
     :param info: Dictionary used to define frequency that the target function value is printed.
+    :param optOut: (output object) Output for optimization results.
     :return:
         x_fnc: (float) Value of target function.
     """
 
     updatePrm(init, prmsToOptmize)
-    updateEffectivePrm(cr, eem, kappa, lam, matrix, molecules, atomTypes)
+    updateEffectivePrm(cr, scl_sig_NEI, scl_eps_NEI, eem, kappa, lam, matrix, molecules, atomTypes)
 
     x_fnc = 0.0
     x_sum = 0.0
@@ -288,10 +313,9 @@ def targetFunction(init, prmsToOptmize, atomTypes, cr, eem, kappa, lam, matrix, 
 
     x_fnc = x_fnc / x_sum
 
-    if info['Nfeval'] % 100 == 0:
-        # TODO - write value of target function
-        print(x_fnc)
-        # sys.exit(123)
+    if info['Nfeval'] % 10 == 0:
+        optOut.write('{0:4d} {1: 3.6f}\n'.format(info['Nfeval'], x_fnc))
+        # print(info['Nfeval'], x_fnc)
 
     info['Nfeval'] += 1
     return x_fnc
@@ -319,11 +343,15 @@ def updatePrm(init, prmsToOptmize):
                 init[i] = prm.max
 
 
-def updateEffectivePrm(cr, eem, kappa, lam, matrix, molecules, atomTypes):
+def updateEffectivePrm(cr, scl_sig_NEI, scl_eps_NEI, eem, kappa, lam, matrix, molecules, atomTypes):
     """Updated values of effective parameters for each molecule.
 
     :param cr: (combiningRule) Combining rule.
+    :param scl_sig_NEI: (float) Scaling factor for 1-4 sigma.
+    :param scl_eps_NEI: (float) Scaling factor for 1-4 epsilon.
     :param eem: (ChargeDistributionMethod) Charge distribution method.
+    :param kappa: (float) Kappa parameter used in charge distribution method.
+    :param lam (float) Lambda parameter used in charge distribution method.
     :param matrix: (Matrix) Matrix with usage of C12(II) parameter.
     :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
     :param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
@@ -331,4 +359,54 @@ def updateEffectivePrm(cr, eem, kappa, lam, matrix, molecules, atomTypes):
     """
 
     molecules_utils.computeChargeDistribution(eem, molecules, atomTypes, kappa, lam)
-    molecules_utils.computeCR(cr, molecules, atomTypes, matrix)
+    molecules_utils.computeCR(cr, scl_sig_NEI, scl_eps_NEI, molecules, atomTypes, matrix)
+
+
+def writePrm(val, prmsOptmized, atomTypes, matrix, cr, scl_sig_NEI, scl_eps_NEI, eem, kappa, lam, molecules, fileName):
+    """Writes optimized parameters to txt file.
+
+    :param val: (list) List with final optimized parameter values.
+    :param prmsOptmized: (list) List of parameters to be optimized.
+    :param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
+    :param matrix: (Matrix) Matrix with usage of C12(II) parameter.
+    :param cr: (combiningRule) Combining rule.
+    :param scl_sig_NEI: (float) Scaling factor for 1-4 sigma.
+    :param scl_eps_NEI: (float) Scaling factor for 1-4 epsilon.
+    :param eem: (ChargeDistributionMethod) Charge distribution method.
+    :param kappa: (float) Kappa parameter used in charge distribution method.
+    :param lam (float) Lambda parameter used in charge distribution method.
+    :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+    :param fileName: (str) Name out output file.
+    :return:
+    """
+
+    updatePrm(val, prmsOptmized)
+    updateEffectivePrm(cr, scl_sig_NEI, scl_eps_NEI, eem, kappa, lam, matrix, molecules, atomTypes)
+
+    with open(fileName, 'w') as out:
+        out.write('{0:<5} {1:11} {2:13} {3:5} {4:13} {5:5} {6:8} {7:6} {8:8} {9:5} {10:13} {11:5} {12:13} {13}\n'
+            .format('#iac', 'atnm', 'sig', 'rng', 'eps', 'rng', 'hrd', 'rng', 'eln', 'rng', 'sig_2', 'rng', 'eps_2',
+                     'rng'))
+
+        for iac in atomTypes:
+            atomTyp = atomTypes[iac]
+            typ = atomTyp.typ
+            sig = atomTyp.sig.cur
+            eps = atomTyp.eps.cur
+            hrd = atomTyp.hrd.cur
+            eln = atomTyp.eln.cur
+
+            sig_rng = atomTyp.sig.rng
+            eps_rng = atomTyp.eps.rng
+            hrd_rng = atomTyp.hrd.rng
+            eln_rng = atomTyp.eln.rng
+
+            sig_2 = atomTyp.sig_2.cur
+            eps_2 = atomTyp.eps_2.cur
+            sig_rng_2 = atomTyp.sig_2.rng
+            eps_rng_2 = atomTyp.eps_2.rng
+
+            out.write('{0:<5} {1:10} {2:13.6E} {3:5.2f} {4:13.6E} {5:5.2f} {6:8.5f} {7:5.2f} {8:9.5f} {9:5.2f} '
+                      '{10:13.6E} {11:5.2f} {12:13.6E} {13:5.2f}\n'
+                      .format(iac, typ, sig, sig_rng, eps, eps_rng, hrd, hrd_rng, eln, eln_rng, sig_2, sig_rng_2, eps_2,
+                              eps_rng_2))

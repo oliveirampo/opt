@@ -39,7 +39,7 @@ def computeChargeDistribution(eem, molecules, atom_types, kap, lam):
 			eem.compute(max_order, mol, cg, atom_types, kap, lam)
 
 
-def computeCR(cr, molecules, atomTypes, matrix):
+def computeCR(cr, scl_sig_NEI, scl_eps_NEI, molecules, atomTypes, matrix):
 	"""Computes combining rule for each molecule.
 
 	:param cr: (combiningRule) Combining rule.

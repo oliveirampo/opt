@@ -52,6 +52,10 @@ class Conf:
         _prmFile: (str) Input file with parameters at given iteration ("prm_[0-9]*.dat").
         _ifpFile: (str) IFP input file with parameters from 2016H66 force field ("2016H66_upd.ifp").
 
+        _optDir: (str) Output directory.
+        _outPrmFile: (str) Output file with optimized parameters at given iteration ("prm_[0-9]*.dat").
+        _optOutFile: (str) Output file with results from optimization.
+
         self._inpFiles: (list) List of most used input files.
 
     Methods:
@@ -102,6 +106,10 @@ class Conf:
         self._samTemplateFile = '{}/{}'.format(self._inpDir, "model.sam")
         self._prmFile = '{}/{}_{}.dat'.format(self._inpDir, "prm", self._it)
         self._ifpFile = '{}'.format("prm/2016H66_upd.ifp")
+
+        self._optDir = 'opt_{}'.format(self._it + 1)
+        self._outPrmFile = '{}/{}_{}.dat'.format(self._inpDir, "prm", self._it + 1)
+        self._optOutFile = '{}/{}_{}.out'.format(self._optDir, "opt", self._it + 1)
 
         self._inpFiles = [self._molDataFile, self._atomListFile, self._bondListFile, self._angListFile,
                           self._matrixFile, self._ifpFile, self._prmNeiFile, self._prmFile]
@@ -242,6 +250,18 @@ class Conf:
     @property
     def samTemplateFile(self):
         return self._samTemplateFile
+
+    @property
+    def optDir(self):
+        return self._optDir
+
+    @property
+    def outPrmFile(self):
+        return self._outPrmFile
+
+    @property
+    def optOutFile(self):
+        return self._optOutFile
 
     @it.setter
     def it(self, n):
