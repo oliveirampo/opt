@@ -119,7 +119,7 @@ class Sensitivity():
                 s = '{} {:>13.3e} ( {:10.3e} ) [ {:>7.2f} ]'.format(s, avg, maxDev, err)
 
             val = row['val']
-            out.write('{0:6} {1:8} {2:2} {3:2} {4:5} {5:3} {6:>10.3e} '
+            out.write('{:6} {:8} {:3} {:3} {:5} {:5} {:>10.3e} '
             .format(cod, typ, idx1, idx2, nam1, nam2, val))
             out.write(s)
             out.write('\n')

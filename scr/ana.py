@@ -17,6 +17,7 @@ Methods:
 
 import pandas as pd
 import numpy as np
+import math
 import sys
 import os
 
@@ -63,7 +64,6 @@ def runAna(conf, molecules, anaDir):
                 writeAllSum(mol, allSum)
 
                 addSens(conf, mol)
-                # print(mol.sens)
 
                 writeResFile(mol, res)
 
@@ -86,7 +86,7 @@ def addSimprop(conf, mol):
 
     properties = {}
     startJob = 1
-    for i in range(startJob, nJobs):
+    for i in range(startJob, nJobs + 1):
         outFileName = 'dat_{}/o_{}_{}'.format(it, cod, i)
         if not os.path.exists(outFileName):
             raise myExceptions.NoSuchFile(outFileName)
@@ -110,7 +110,7 @@ def addSimprop(conf, mol):
             val = float(val)
             if propCode not in properties:
                 properties[propCode] = {'tim': [tim]}
-                for j in range(startJob, nJobs):
+                for j in range(startJob, nJobs + 1):
                     properties[propCode][j] = []
                 properties[propCode][i].append(val)
 
@@ -122,9 +122,9 @@ def addSimprop(conf, mol):
     for propCode in properties:
         tim = np.unique(properties[propCode]['tim'])
 
-        traj = np.zeros((tim.shape[0], nJobs), dtype=np.float)
+        traj = np.zeros((tim.shape[0], nJobs + 1), dtype=np.float)
         traj[:, 0] = tim
-        for j in range(startJob, nJobs):
+        for j in range(startJob, nJobs + 1):
             traj[:, j] = np.array(properties[propCode][j])
 
         # mol.addTrajectory(letter, traj)
@@ -204,6 +204,20 @@ def addSens(conf, mol):
     mol.sens = sens
 
 
+def getErr(prop):
+    """Returns error on the mean at 95% confidence interval over repetitions.
+
+    :param prop: (list, arr) Array of values.
+    :return:
+        err: (float) Error.
+    """
+
+    std = np.std(prop, ddof=1)
+    N = len(prop)
+    err = 1.96 * std / math.sqrt(N)
+    return err
+
+
 def getMaxDev(prop):
     """Gets maximum deviation from array of values.
 
@@ -237,7 +251,7 @@ def writeAllFile(mol, out):
     pre_sim = mol.pre_sim
     tem_sim = mol.tem_sim
 
-    s = '{:6} {:8} {:3} {:6} {:6}'.format(cod, frm, run, pre_sim, tem_sim)
+    s = '{:6} {:12} {:3} {:6} {:6}'.format(cod, frm, run, pre_sim, tem_sim)
 
     properties = mol.properties
     for prop in properties:
@@ -245,9 +259,11 @@ def writeAllFile(mol, out):
         ref = prop.ref
         runningAverages = prop.runningAverages
 
-        s = '{} {:3} {:6}'.format(s, wei, ref)
+        s = '{} {:>8} {:7}'.format(s, wei, ref)
         for val in runningAverages:
             s = '{} {:6.1f}'.format(s, val)
+
+    s = s + '\n'
 
     out.write(s)
 
@@ -282,6 +298,11 @@ def writeAllSum(mol, allSum):
 
         if wei == 0.0:
             wei = '*'
+            ref = '-'
+            sim = '-'
+            dev = '-'
+            err = '-'
+            dd = '-'
         else:
             ref = '{:.1f}'.format(ref)
             sim = '{:.1f}'.format(sim)
@@ -326,7 +347,7 @@ def writeMolData(mol, out):
     s = ''
     properties = mol.properties
     for prop in properties:
-        letter = prop.letter
+        letter = prop.code
         wei = prop.wei
         ref = prop.ref
         sim = prop.sim
@@ -374,7 +395,7 @@ def getExpSimData(molecules):
             properties = mol.properties
             for prop in properties:
                 wei = prop.wei
-                letter = prop.letter
+                letter = prop.code
                 ref = np.nan
                 sim = np.nan
                 if wei != 0.0:
@@ -404,6 +425,7 @@ def writeRmsd(df, out):
             propLetters.append(letter)
 
     df['short_cod'] = df['cod'].map(lambda x: x[0] + x[2])
+    ref_columns = ['ref_' + prop for prop in propLetters]
 
     # get statistics per group of compounds (based on short_cod)
     df_grouped = df.groupby('short_cod')
@@ -412,8 +434,11 @@ def writeRmsd(df, out):
         cod = codes[i]
         data = df_grouped.get_group(cod)
 
-        # print('{:3} {:4}'.format(cod, 1), end=' ')
-        out.write('{:3} {:4}'.format(cod, 1))
+        data_non_empty = data.dropna(subset=ref_columns, how='all')
+        nMol = getNumberOfMolecules(data_non_empty)
+
+        # print('{:3} {:4}'.format(cod, nMol), end=' ')
+        out.write('{:3} {:4}'.format(cod, nMol))
 
         for letter in propLetters:
             dat = data.dropna(subset=['ref_{}'.format(letter)])
@@ -433,7 +458,7 @@ def writeRmsd(df, out):
         out.write('\n')
 
     # get total statistics
-    nMol = df['cod'].map(lambda x: x[:5]).unique().shape[0]
+    nMol = getNumberOfMolecules(df)
 
     # print('{:3} {:4}'.format('T', nMol), end=' ')
     out.write('{:3} {:4}'.format('T', nMol))
@@ -457,9 +482,20 @@ def getRmsd(prop, df):
     :return:
     """
 
-    # prop_avg = np.mean(df[['ref_{}'.format(prop)]]).values[0]
-    # rmsd = np.sqrt(np.mean(df[['diff2_{}'.format(prop)]], axis=1)).values[0]
-    # aved = np.mean(df[['diff_{}'.format(prop)]], axis=1).values[0]
-    # mean_err = np.mean(df[['err_{}'.format(prop)]], axis=1).values[0]
-    # return prop_avg, rmsd, aved, mean_err
-    return 0, 0, 0, 0
+    prop_avg = np.mean(df[['ref_{}'.format(prop)]]).values[0]
+    rmsd = np.sqrt(np.mean(df[['diff2_{}'.format(prop)]], axis=0)).values[0]
+    aved = np.mean(df[['diff_{}'.format(prop)]], axis=0).values[0]
+    mean_err = np.mean(df[['err_{}'.format(prop)]], axis=0).values[0]
+
+    return prop_avg, rmsd, aved, mean_err
+
+
+def getNumberOfMolecules(df):
+    """Returns number of unique molecules.
+
+    :param df: (pandas DataFrame) Table with data.
+    :return: nMol (int) Number of unique molecules.
+    """
+
+    nMol = df['cod'].map(lambda x: x[:5]).unique().shape[0]
+    return nMol

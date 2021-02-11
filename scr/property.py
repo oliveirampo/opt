@@ -14,10 +14,11 @@ import ana
 
 
 class Property:
+
     """Base class for property object.
 
     Attributes:
-        _code: (str) Molecule code.
+        _code: (str) Property code.
         _unit: (str) Unit of measurement.
         _scale: Scale factor.
         _wei: Weight.
@@ -26,12 +27,12 @@ class Property:
         _runningAverages: (list) Running averages of all jobs.
         _sim: (float) Simulated result.
         _maxDev: (float) Maximum deviation among simulation results of different jobs.
+        _err: (float) Error on the mean at 95% confidence interval over repetitions.
     """
-
     def __init__(self, code, unit, scale, wei, ref):
         """Constructs all the necessary attributes for the property.
 
-        :param code: (str) Molecule code.
+        :param code: (str) Property code.
         :param unit: (str) Unit of measurement.
         :param scale: Scale factor.
         :param wei: Weight.
@@ -47,6 +48,7 @@ class Property:
         self._runningAverages = []
         self._sim = np.nan
         self._maxDev = np.nan
+        self._err = np.nan
 
     @property
     def code(self):
@@ -101,7 +103,9 @@ class Property:
         self._runningAverages = value
         self._sim = value.mean()
         maxDev = ana.getMaxDev(value)
+        err = ana.getErr(value)
         self._maxDev = maxDev
+        self._err = err
 
     def __str__(self):
         s = '{} {} {} {}'.format(self._code, self._wei, self._ref, self._sim)
