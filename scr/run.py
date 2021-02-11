@@ -26,7 +26,7 @@ def main():
 	except NotImplementedError as err:
 		print(err)
 
-	except FileNotFoundError as err:
+	except myExceptions.NoSuchFile as err:
 		print(err)
 		sys.exit(1)
 

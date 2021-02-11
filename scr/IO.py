@@ -27,6 +27,7 @@ import sys
 import os
 
 import myExceptions
+import configuration
 import molecules_utils
 import effectiveParameter
 from iac import IAC
@@ -34,6 +35,7 @@ from atom import Atom
 from matrix import Matrix
 from molecule import Molecule
 from property import Dns, Hvp
+
 
 
 def readFile(fileName):
@@ -71,9 +73,7 @@ def readConf(conf, fileName):
 
 		elif row[0].startswith('BEGIN'):
 			i, dictName, add_data = readConf_helper(i, lines)
-			# print(dictName)
-			# print(add_data)
-			# TODO
+			confDict[dictName] = add_data
 
 		else:
 			if len(row) == 1:
@@ -144,6 +144,20 @@ def readConf(conf, fileName):
 
 	except KeyError:
 		raise myExceptions.MissingKeyWordError(key, "cnfFile")
+
+	# Add additional configuration.
+	try:
+		plotConf = configuration.PlotConf()
+		plotConf.map_iac_name = confDict['iac_name']
+		plotConf.map_cod_family = confDict['cod_family']
+		plotConf.map_cod_color = confDict['cod_color']
+		plotConf.map_cod_marker = confDict['cod_marker']
+		plotConf.settings = confDict['plot_settings']
+
+		conf.plotConf = plotConf
+
+	except KeyError:
+		pass
 
 
 def readConf_helper(i, lines):

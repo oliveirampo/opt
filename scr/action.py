@@ -5,9 +5,9 @@ Classes:
 	Action
 	Gen(Action)
 	Ana(Action)
+	Plot(Action)
 	Opt(Action)
 	Sub(Action) TODO
-	Plot(Action) TODO
 """
 
 from abc import ABC, abstractmethod
@@ -16,6 +16,7 @@ import os
 
 import IO
 import ana
+import plot
 import optimize
 import writeOutFiles
 import molecules_utils
@@ -51,7 +52,7 @@ class Action(ABC):
 	def get_choices():
 		"""Returns list of possible choices of actions."""
 
-		return ['GEN', 'ANA','OPT','PLOT']
+		return ['GEN', 'ANA', 'OPT', 'PLOT']
 
 	@staticmethod
 	def get_object(runType, it):
@@ -62,7 +63,7 @@ class Action(ABC):
 		:return: One of the classes that implements Action.
 		"""
 
-		classes = {"GEN": Gen, "ANA": Ana, "OPT": Opt}
+		classes = {"GEN": Gen, "ANA": Ana,  "PLOT": Plot, "OPT": Opt}
 
 		if runType not in classes:
 			raise myExceptions.ClassNotImplemented(runType, 'Action')
@@ -120,9 +121,6 @@ class Action(ABC):
 
 class Gen(Action):
 	"""Generates input files to run simulations."""
-	def __init__(self, it):
-		Action.__init__(self, it)
-
 	def run(self, conf, molecules, atomTypes):
 		"""Generates input files to run simulations.
 
@@ -157,14 +155,7 @@ class Gen(Action):
 
 
 class Ana(Action):
-	"""Perform analysis of the simulation results."""
-
-	def __init__(self, it):
-		"""Constructs all the necessary attributes for the given action.
-
-		:param it: (int) Iteration number.
-		"""
-		Action.__init__(self, it)
+	"""Performs analysis of the simulation results."""
 
 	def run(self, conf, molecules, atomType):
 		"""Perform analysis of the simulation results.
@@ -182,6 +173,18 @@ class Ana(Action):
 		os.makedirs(anaDir)
 
 		ana.runAna(conf, molecules, anaDir)
+
+
+class Plot(Action):
+	"""Plots results from optimization and from simulations."""
+	def run(self, conf, molecules, atomTypes):
+		plotDir = 'plot_{}'.format(conf.it)
+		conf.plotConf.plotDir = plotDir
+
+		if not os.path.exists(plotDir):
+			os.makedirs(plotDir)
+
+		plot.run(conf)
 
 
 class Opt(Action):

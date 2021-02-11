@@ -2,6 +2,7 @@
 
 Classes:
     Conf
+    PlotConf
 """
 
 import numpy as np
@@ -38,6 +39,7 @@ class Conf:
         _scl_sig_NEI: (float) Scaling factor for 1-4 sigma.
         _scl_eps_NEI: (float) Scaling factor for 1-4 epsilon.
         _ignoreIAC: (list) List of atom types indexes which are ignored during charge distribution.
+        _plotConf: (PlotConf) Configuration object for plots.
 
         _inpDir: (str) Directory of input files.
         _molDataFile: (str) Input file with list of molecules ("mol.dat").
@@ -92,6 +94,7 @@ class Conf:
         self._scl_sig_NEI = 1.0
         self._scl_eps_NEI = 1.0
         self._ignoreIAC = []
+        self._plotConf = PlotConf
 
         # input files
         self._inpDir = '00_inp'
@@ -198,6 +201,10 @@ class Conf:
     @property
     def ignoreIAC(self):
         return self._ignoreIAC
+
+    @property
+    def plotConf(self):
+        return self._plotConf
 
     @property
     def inpFiles(self):
@@ -362,6 +369,10 @@ class Conf:
             else:
                 sys.exit('ERROR: wrong type for ignoreIAC')
 
+    @plotConf.setter
+    def plotConf(self, plt):
+        self._plotConf = plt
+
     @inpFiles.setter
     def inpFiles(self, n):
         self._inpFiles = n
@@ -374,3 +385,75 @@ class Conf:
     def __str__(self):
         s = '\t{}:00 {} {}'.format(self._wall_time, self._prd_frq, self._prd_stp)
         return s
+
+
+class PlotConf:
+    """Configuration object for plots.
+
+    Attributes:
+    -----------
+        _map_iac_name: (Dict) Dictionary which maps iac code to atom name.
+        _map_cod_family: (Dict) Dictionary which maps molecule cod to family code.
+        _map_cod_color: (Dict) Dictionary which maps molecule code to colors.
+        _map_cod_marker: (Dict) Dictionary which maps molecule cod to marker.
+        _settings: (Dict) Dictionary with plot settings.
+        _plotDir: (str) Directory of plots.
+    """
+
+    def __init__(self):
+        """Constructs all the necessary attributes for the plot configuration object."""
+
+        self._map_iac_name = {}
+        self._map_cod_family = {}
+        self._map_cod_color = {}
+        self._map_cod_marker = {}
+        self._settings = {}
+        self._plotDir = ''
+
+    @property
+    def map_iac_name(self):
+        return self._map_iac_name
+
+    @property
+    def map_cod_family(self):
+        return self._map_cod_family
+
+    @property
+    def map_cod_color(self):
+        return self._map_cod_color
+
+    @property
+    def map_cod_marker(self):
+        return self._map_cod_marker
+
+    @property
+    def settings(self):
+        return self._settings
+
+    @property
+    def plotDir(self):
+        return self._plotDir
+
+    @map_iac_name.setter
+    def map_iac_name(self, d):
+        self._map_iac_name = d
+
+    @map_cod_family.setter
+    def map_cod_family(self, d):
+        self._map_cod_family = d
+
+    @map_cod_color.setter
+    def map_cod_color(self, d):
+        self._map_cod_color = d
+
+    @map_cod_marker.setter
+    def map_cod_marker(self, d):
+        self._map_cod_marker = d
+
+    @settings.setter
+    def settings(self, d):
+        self._settings = d
+
+    @plotDir.setter
+    def plotDir(self, plotDir):
+        self._plotDir = plotDir
