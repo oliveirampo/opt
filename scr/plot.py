@@ -7,15 +7,21 @@ Methods:
     plot_data(conf, data)
     plot_exp_vs_sim(df, plotSettings, prop_code, name, plotDir)
     add_legend(name, loc, bbox_pos)
+    plot_target_function(it, plotConf)
+    plot_target_function_helper(actual, predicted, plotDir)
+    plot_prm(it, plotConf, plotDir)
+    plot_prm_NB(data, plotConf, plotDir)
+    getColors()
 """
 
-# from matplotlib.ticker import MaxNLocator, MultipleLocator, AutoMinorLocator
+from matplotlib.ticker import MaxNLocator
 from collections import OrderedDict
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import copy
 import math
+import sys
 import os
 
 import myExceptions
@@ -30,20 +36,23 @@ def run(conf):
     :param conf: (configuration.Conf) Configuration object.
     """
 
-    data = getData(conf)
+    it = conf.it
+    plotConf = conf.plotConf
 
-    plot_data(conf, data)
+    data = getData(it, plotConf)
+
+    plot_data(plotConf, data)
+    plot_target_function(it, plotConf)
 
 
-def getData(conf):
+def getData(it, plotConf):
     """Returns experimental data and simulation results read from file.
 
-    :param conf: (configuration.Conf) Configuration object.
+    :param it: (int) Iteration number.
+    :param plotConf: (PlotConf) Plot configuration object.
     :return:
         data: (pandas DataFrame) Table with data.
     """
-
-    it = conf.it
 
     fileName = 'ana_{0}/all_sum_{0}.out'.format(it)
     if not os.path.exists(fileName):
@@ -59,11 +68,9 @@ def getData(conf):
     data = data.replace('*', np.nan)
     data = data.where(data != 0.0, np.nan)
 
-    plotCnf = conf.plotConf
-
-    map_cod_family = plotCnf.map_cod_family
-    map_cod_color = plotCnf.map_cod_color
-    map_cod_marker = plotCnf.map_cod_marker
+    map_cod_family = plotConf.map_cod_family
+    map_cod_color = plotConf.map_cod_color
+    map_cod_marker = plotConf.map_cod_marker
     data = data.apply(addExtraInfo, args=(map_cod_family, map_cod_color, map_cod_marker,), axis=1)
 
     return data
@@ -93,17 +100,16 @@ def addExtraInfo(row, map_cod_family, map_cod_color, map_cod_marker):
     return row
 
 
-def plot_data(conf, data):
+def plot_data(plotConf, data):
     """Plots experimental data versus simulation results.
 
-    :param conf: (configuration.Conf) Configuration object.
+    :param plotConf: (PlotConf) Plot configuration object.
     :param data: (pandas DataFrame) Table with data.
     """
 
-    plotCnf = conf.plotConf
-    plotDir = plotCnf.plotDir
+    plotDir = plotConf.plotDir
 
-    plotSettings = plotCnf.settings
+    plotSettings = plotConf.settings
 
     property_codes = [col.replace('_exp', '') for col in data.columns.to_list() if 'exp' in col]
 
@@ -230,3 +236,247 @@ def add_legend(name, loc, bbox_pos):
 
     by_label = OrderedDict(zip(labels, newHandles))
     plt.legend(by_label.values(), by_label.keys(), fontsize=12, numpoints=1, frameon=False)
+
+
+def plot_target_function(it, plotConf):
+    """Plots evolution of target function.
+
+    :param it: (int) Iteration Number.
+    :param plotConf: plotConf: (PlotConf) Plot configuration object.
+    :return:
+    """
+
+    plt.rcParams['mathtext.fontset'] = 'cm'
+
+    plotDir = plotConf.plotDir
+
+    data = {}
+    for i in range(1, it + 1):
+        optFile = 'opt_{0}/opt_{0}.out'.format(i)
+        if not os.path.exists(optFile):
+            raise myExceptions.NoSuchFile(optFile)
+
+        d = pd.read_csv(optFile, sep='\s+', comment='#', names=['step', 'value'])
+        data[i] = d.copy()
+
+    actual = []
+    predicted = []
+    for i in data.keys():
+        ini = data[i]['value'].iloc[0]
+        actual.append([int(i) - 1, ini])
+    for i in list(data.keys()):
+        fin = data[i]['value'].iloc[-1]
+        predicted.append([i, fin])
+
+    actual = np.asarray(actual)
+    predicted = np.asarray(predicted)
+    plot_target_function_helper(actual, predicted, plotDir)
+
+
+def plot_target_function_helper(actual, predicted, plotDir):
+    """Helper function to plot evolution of target function.
+
+    :param actual: (array) Actual values of target function.
+    :param predicted: (array) Predicted values of target function.
+    :param plotDir: (str) Directory where plot will be saved.
+    :return:
+    """
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    plt.plot(actual[:, 0], actual[:, 1], color='red',  marker='o', label=r'$Q_i^{real}$', markersize=8, linewidth=3.0)
+    plt.plot(predicted[:, 0], predicted[:, 1], color='blue', marker='o', label=r'$Q_i^{pred}$')
+
+    ax.set_xlabel(r'$i$', fontsize=14)
+    ax.set_ylabel(r'$Q_i$', fontsize=14)
+
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+
+    # plt.title('HAL-CAL')
+
+    ax.legend(loc='upper right', frameon=False, fontsize=14)
+    plt.tight_layout()
+
+    fig.savefig(plotDir + 'target_function.png')
+    plt.close(fig)
+
+
+def plot_prm(it, plotConf, plotDir):
+    """Plot evolution of force-field parameter along iteration number.
+
+    :param it: (int) Iteration Number.
+    :param plotConf: plotConf: (PlotConf) Plot configuration object.
+    :param plotDir: (str) Directory where plot will be saved.
+    :return:
+    """
+
+    data = pd.DataFrame()
+
+    it = int(it)
+    for i in range(it + 1):
+        prmFile = '00_inp/prm_' + str(i) + '.dat'
+        if not os.path.exists(prmFile):
+            raise myExceptions.NoSuchFile(prmFile)
+
+        d = pd.read_csv(prmFile, sep='\s+', comment='#',
+                        names=['iac', 'name', 'sig', 'rng_sig', 'eps', 'rng_eps', 'hrd', 'rng_hrd', 'eln', 'rng_eln',
+                               'sig_2', 'rng_sig_2', 'eps_2', 'rng_eps_2'],
+                        usecols=['iac', 'name', 'sig', 'eps', 'hrd', 'eln'])
+
+        d['it'] = i
+        data = data.append(d)
+
+    # for iac in [13, 14, 15, 16]:
+    #     data = data[data.iac != iac]
+
+    plot_prm_NB(data, plotConf, plotDir)
+
+
+def plot_prm_NB(data, plotConf, plotDir):
+    """Helper function to plot evolution of force-field parameters.
+
+    :param data: (pandas DataFrame) Table with data.
+    :param plotConf: plotConf: (PlotConf) Plot configuration object.
+    :param plotDir: (str) Directory where plot will be saved.
+    :return:
+    """
+
+    plt.rcParams['mathtext.fontset'] = 'cm'
+    color = getColors()
+
+    prmIni = 2
+    prmFin = 4
+    nPrms = prmFin - prmIni
+    prmTypes = ['sig', 'eps', 'hrd', 'eln', 'eln']
+    prmNames = [r'$\sigma \,$ [nm]', r'$\epsilon \,$ [kJ $\cdot$ mol$^{-1}$]', r'$\eta \,$ [$e^{-1} \cdot$ V]',
+                r'$\chi \,$ [V]']
+    # prmNames = [r'$\tilde{\sigma} \,$ [nm]', r'$\tilde{\epsilon} \,$ [kJ $\cdot$ mol$^{-1}$]',
+    #             r'$\eta \,$ [$e^{-1} \cdot$ V]', r'$\chi \,$ [V]']
+
+    if nPrms == 4:
+        fig, axes = plt.subplots(nrows=1, ncols=nPrms, figsize=(12, 8))
+    elif nPrms == 2:
+        fig, axes = plt.subplots(nrows=1, ncols=nPrms, figsize=(10, 8))
+    else:
+        print('\n\tnPrms = 2 or 4.')
+        sys.exit(1)
+
+    iac = data.iac.unique()
+    iacName = iac
+    if 'iac_name' in plotConf:
+        iacName = plotConf['iac_name']
+
+    idx = 0
+    for i in iacName:
+        c = color[idx]
+        nam = iacName[i]
+        idx += 1
+
+        i = int(i)
+        X = data[data['iac'] == i]['it']
+        for j in range(nPrms):
+            Y = data[data['iac'] == i][prmTypes[j + prmIni]]
+            if prmTypes[j + prmIni] in ['eln', 'hrd']:
+                Y = 1.44 * Y
+            axes[j].plot(X, Y, marker='o', markersize=4, color=c, label=nam)
+
+    for j in range(nPrms):
+        axes[j].grid()
+        axes[j].set_ylabel(prmNames[j + prmIni], size=16)
+        axes[j].xaxis.set_major_locator(MaxNLocator(integer=True))
+        axes[j].tick_params(axis="x", labelsize=12)
+        axes[j].tick_params(axis="y", labelsize=12)
+
+        axes[j].xaxis.set_ticks(np.arange(0, 7, 2))
+
+    if nPrms == 4:
+        axes[nPrms - 1].legend(loc='upper right', fontsize=16, bbox_to_anchor=(1.875, 1.0), frameon=False)
+        plt.subplots_adjust(wspace=0.5)
+        fig.text(0.475, 0.02, r'$i$', ha='center', size=16)
+        fig.subplots_adjust(left=0.10, right=0.875)
+
+    elif nPrms == 2:
+        # LJ
+        # axes[nPrms - 1].legend(loc='upper right', fontsize=12, bbox_to_anchor=(1.45, 1.01), frameon=False)
+        # fig.text(0.45, 0.020, 'Iteration', ha='center', size=16)
+        # fig.subplots_adjust(left=0.10, right=0.85)
+        # plt.subplots_adjust(wspace=0.30)
+
+        # EE
+        # axes[nPrms - 1].legend(loc='upper right', fontsize=12, bbox_to_anchor=(1.55, 1.01), frameon=False)
+        # fig.text(0.45, 0.020, 'Iteration', ha='center', size=16)
+        # plt.subplots_adjust(wspace=0.30)
+
+        # OXY + HB EEM
+        plt.subplots_adjust(wspace=0.25)
+        axes[nPrms - 1].legend(loc='upper right', fontsize=12, bbox_to_anchor=(1.50, 1.01), frameon=False)
+        fig.subplots_adjust(left=0.0825, right=0.835)
+        axes[0].set_ylim([0, 45])
+        axes[1].set_ylim([0, 55])
+        axes[1].set_yticks(np.arange(0, 56, 5))
+
+        # OXY + HB LJ
+        # plt.subplots_adjust(wspace=0.25)
+        # axes[nPrms - 1].legend(loc='upper right', fontsize=12, bbox_to_anchor=(1.400, 1.00), frameon=False)
+        # fig.subplots_adjust(left=0.0825, right=0.85)
+        # axes[0].set_ylim([0.22, 0.36])
+        # axes[1].set_ylim([0.10, 0.90])
+
+    fig.savefig(plotDir + 'prm_NB.png')
+    plt.close(fig)
+
+
+def getColors():
+    """Returns array with color names."""
+
+    color = [
+        'red',
+        'green',
+        'blue',
+        'olive',
+        'gray',
+        'coral',
+        'navy',
+        'maroon',
+        'magenta',
+        'deeppink',
+        'peru',
+        'deepskyblue',
+        'darkcyan',
+        'darkorchid',
+        'orangered',
+        'lime',
+        'aqua',
+        'darkseagreen',
+        'teal',
+        'crimson',
+        'turquoise',
+        'gold',
+        'yellow',
+        'greenyellow',
+        'fuchsia',
+        'mediumslateblue',
+        'darkorange',
+        'aliceblue',
+        'antiquewhite',
+        'aquamarine',
+        'bisque',
+        'blueviolet',
+        'blueviolet',
+        'darkgray',
+        'darkmagenta',
+        'darkolivegreen',
+        'darkred',
+        'gainsboro',
+        'honeydew',
+        'indianred',
+        'khaki',
+        'linen',
+        'rosybrown',
+        'moccasin',
+        ]
+    return color
