@@ -21,17 +21,49 @@ constructed using a fragment library via combinatorial isomer enumeration.
 
 * There are two key aspects in this scheme:
 
-  1. The force-field design relies on an [electronegativity-equalization scheme](https://github.com/oliveirampo/opt/blob/master/scr/EEM.py)
+  1. The force-field design relies on an
+     [electronegativity-equalization scheme](https://github.com/oliveirampo/opt/blob/master/scr/ChargeDistribution.py)
 for the atomic partial charges [(J. Chem. Phys. 131, 044127 (2009))](https://aip.scitation.org/doi/10.1063/1.3187034).
   2. The optimization procedure uses statistical-mechanical expressions.
   
 ## Files Description
 
-TODO
+The script files are found in the scr/ directory.
+
+Required directories:
+  - bin/: Directory with SAMOS executable.
+  - scr/: Directory with source code.
+  - wrkDir/: working directory at the same level of the scr/ directory.
+    Run the pipeline from this directory.
+    
+  - wrkDir/00_inp/: Directory of input files.
+    - mol.dat: File with list of molecules.
+    - Conf.dat: Configuration file.
+    - listAtom.dat: File with list of atoms for each molecule.
+    - listAng.dat: File with list of angles for each molecule.
+    - listBond.dat: File with list of bonds for each molecule.
+    - matrix.dat: File that specifies usage of C12(II) Lennard-Jones parameters.
+    - model.sam: Template of SAMOS input file.
+    - prm_0.dat: File with initial guess of parameters.
+    - symmetry_sig.dat: File that specifies which parameters are optimized simultaneously in terms of sigma.
+    - symmetry_eps.dat: File that specifies which parameters are optimized simultaneously in terms of epsilon.
+  
+  - wrkDir/cfg/: Directory with configurations.
+    - 00_{molecule_cod}_liq_ini.cfg: Default configuration in the liquid phase.
+    - 00_{molecule_cod}_gas_ini.cfg: Default configuration in the gas phase.
+  - wrkDir/top/: Directory with topologies.
+  - wrkDir/trc/: Directory with trajectories.
+  - wrkDir/prm/: Directory with default IFP file:
+    - FILE.ifp: Default interaction parameter file (IFP).
 
 ## Installation
 
-TODO
+This pipeline uses Python 3
+and default packages for data visualization
+and statistical analysis.
+
+Additional packages:
+  - scipy
 
 ## Usage
 
@@ -45,8 +77,9 @@ These are the options:
   
 Execute the pipeline with the following command:
 
-python <path to source code>/run.py $OPTION $IT
+> python $PATH/run.py $OPTION $IT
   
-where OPTION = (GEN, ANA, OPT, SUB, PLOT)
+where
+PATH = path to source code
+OPTION = (GEN, ANA, OPT, SUB, PLOT)
 and IT is the iteration number.
-
