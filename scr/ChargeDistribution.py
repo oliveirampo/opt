@@ -21,8 +21,11 @@ Classes:
 """
 
 from abc import ABC, abstractmethod
+# from decimal import Decimal
 import numpy as np
+# import warnings
 import math
+# import sys
 
 import myExceptions
 
@@ -107,6 +110,11 @@ class ChargeDistributionMethod(ABC):
         :param cg: (numpy.ndarray) Charge groups - list of list with indexes of atoms in the same charge group.
         :param atom_types: (collections.OrderedDict) Ordered dictionary of atom types.
         :return:
+            selected_connectivity: (numpy.ndarray)
+            selected_distance_matrix: (numpy.ndarray)
+            diameters: (numpy.ndarray)
+            hardness: (numpy.ndarray)
+            electronegativity (numpy.ndarray)
         """
 
         atoms = mol.atoms
@@ -114,6 +122,11 @@ class ChargeDistributionMethod(ABC):
         hardness = np.zeros(nAtoms)
         diameters = np.zeros(nAtoms)
         electronegativity = np.zeros(nAtoms)
+        selected_distance_matrix = np.zeros((nAtoms, nAtoms))
+        selected_connectivity = np.zeros((nAtoms, nAtoms), dtype=bool)
+
+        distance_matrix = mol.distance_matrix
+        connectivity = mol.connectivity
 
         for i in range(cg.shape[0]):
             idx1 = cg[i]
@@ -129,7 +142,19 @@ class ChargeDistributionMethod(ABC):
             diameters[i] = sig1
             electronegativity[i] = eln1
 
-        return diameters, hardness, electronegativity
+            for j in range(i, cg.shape[0]):
+                idx2 = cg[j]
+
+                pos1 = idx1 - 1
+                pos2 = idx2 - 1
+
+                selected_distance_matrix[i, j] = distance_matrix[pos1, pos2]
+                selected_distance_matrix[j, i] = distance_matrix[pos1, pos2]
+
+                selected_connectivity[i, j] = connectivity[pos1, pos2]
+                selected_connectivity[j, i] = connectivity[pos1, pos2]
+
+        return selected_connectivity, selected_distance_matrix, diameters, hardness, electronegativity
 
     def assignCharges(self, cg, mol, charges):
         """Assigns atomic partial charges to atoms in the given charge group.
@@ -146,9 +171,11 @@ class ChargeDistributionMethod(ABC):
         for i in range(len(cg)):
             idx = cg[i]
             atom = atoms[idx]
+            # atom.charge.cur = Decimal(charges[i])
             atom.charge.cur = charges[i]
 
         # use only 3 digits for charge
+        # qtot = Decimal(0.0)
         qtot = 0.0
         for idx in cg:
             qtot += atoms[idx].charge.cur
@@ -157,38 +184,51 @@ class ChargeDistributionMethod(ABC):
             atoms[idx].charge.cur -= qtot / n_atoms
 
         for idx in cg:
+            # atoms[idx].charge.cur = int(atoms[idx].charge.cur * Decimal(1000.0)) / Decimal(1000.0)
             atoms[idx].charge.cur = int(atoms[idx].charge.cur * 1000.0) / 1000.0
 
+        # qtot = Decimal(0.0)
         qtot = 0.0
         for idx in cg:
             qtot += atoms[idx].charge.cur
 
         atoms[cg[0]].charge.cur -= qtot
 
-    def coulombIntegrals(self, maxOrder, mol, N, diameters):
+    def coulombIntegrals(self, maxOrder, N, connectivity, distance_matrix, diameters):
         """Computes coulomb integrals.
 
         :param maxOrder: (float) Max order.
-        :param mol: (Molecule) Molecule.
         :param N: (int) number of atoms.
+        :param connectivity: (numpy.ndarray) Connectivity matrix.
+        :param distance_matrix (numpy.ndarray) Distance matrix.
         :param diameters: (numpy.ndarray) Diameter of atoms.
         :return: (numpy.ndarray) Coulomb integrals.
         """
 
-        connectivity = mol.connectivity
-        distance_matrix = mol.distance_matrix
-
         coulomb = np.zeros((N, N))
+
+        # warnings.filterwarnings('error')
+        # try:
         for i in range(0, N):
             for j in range(i+1, N):
                 if connectivity[i,j] <= maxOrder:
                     distance = distance_matrix[i, j]
+                    diameter_sum = diameters[i] + diameters[j]
+
                     if distance == 0.0:
                         coulomb[i, j] = 0.0
+
+                    elif diameter_sum == 0.0:
+                        coulomb[i, j] = 0.0
+
                     else:
                         coulomb[i,j] = 1. / distance_matrix[i,j] * math.erf(distance_matrix[i,j] \
                             / np.sqrt(diameters[i]**2 + diameters[j]**2 ))
-                    coulomb[j,i] = coulomb[i,j]
+                    coulomb[j, i] = coulomb[i, j]
+
+        # except Warning:
+        #     print(mol.cod)
+        #     sys.exit(123)
 
         return coulomb
 
@@ -365,10 +405,11 @@ class EEM(ChargeDistributionMethod):
         """
 
         n_atoms = cg.shape[0]
-        diameters, hardness, electronegativity = self.getParameters(mol, cg, atom_types)
+        selected_connectivity, selected_distance_matrix, diameters, hardness, electronegativity = self.getParameters(
+            mol, cg, atom_types)
 
         # atomic J Matrix and Coulomb integrals
-        coulomb = self.coulombIntegrals(max_order, mol, n_atoms, diameters)
+        coulomb = self.coulombIntegrals(max_order, n_atoms, selected_connectivity, selected_distance_matrix, diameters)
         JMatrix = np.diag(hardness) + coulomb
         charges = self.solve(electronegativity, JMatrix, n_atoms, mol)
         self.assignCharges(cg, mol, charges)
@@ -430,10 +471,11 @@ class QEqAtomic(ChargeDistributionMethod):
 
         # Same as for EEM.
         n_atoms = cg.shape[0]
-        diameters, hardness, electronegativity = self.getParameters(mol, cg, atom_types)
+        selected_connectivity, selected_distance_matrix, diameters, hardness, electronegativity = self.getParameters(
+            mol, cg, atom_types)
 
         # compute Coulomb integrals
-        coulomb = self.coulombIntegrals(max_order, mol, n_atoms, diameters)
+        coulomb = self.coulombIntegrals(max_order, n_atoms, selected_connectivity, selected_distance_matrix, diameters)
         JMatrix = np.diag(hardness) + coulomb
         charges = self.solve(electronegativity, JMatrix, n_atoms, mol)
 
@@ -492,10 +534,11 @@ class QEqBond(BondChargeDistributionMethod):
         n_atoms = cg.shape[0]
         net_charge = mol.net_charge
         charge_transfer_topology = mol.charge_transfer_topology
-        diameters, hardness, electronegativity = self.getParameters(mol, cg, atom_types)
+        selected_connectivity, selected_distance_matrix, diameters, hardness, electronegativity = self.getParameters(
+            mol, cg, atom_types)
 
         # atomic J Matrix
-        coulomb = self.coulombIntegrals(max_order, mol, n_atoms, diameters)
+        coulomb = self.coulombIntegrals(max_order, n_atoms, selected_connectivity, selected_distance_matrix, diameters)
         JMatrix = np.diag(hardness) + coulomb
 
         # transform to bond variables
@@ -536,11 +579,12 @@ class AACT(BondChargeDistributionMethod):
         n_atoms = cg.shape[0]
         net_charge = mol.net_charge
         charge_transfer_topology = mol.charge_transfer_topology
-        diameters, hardness, electronegativity = self.getParameters(mol, cg, atom_types)
+        selected_connectivity, selected_distance_matrix, diameters, hardness, electronegativity = self.getParameters(
+            mol, cg, atom_types)
         bondHardness = mol.get_bond_hardness(hardness)
 
         # here, the atomic J matrix has 0 on the diagonal
-        JMatrix = self.coulombIntegrals(max_order, mol, n_atoms, diameters)
+        JMatrix = self.coulombIntegrals(max_order, n_atoms, selected_connectivity, selected_distance_matrix, diameters)
 
         # transform to bond variables
         bVars, B = self.bondVars(charge_transfer_topology)
@@ -584,11 +628,12 @@ class SQE (BondChargeDistributionMethod):
         n_atoms = cg.shape[0]
         net_charge = mol.net_charge
         charge_transfer_topology = mol.charge_transfer_topology
-        diameters, hardness, electronegativity = self.getParameters(mol, cg, atom_types)
+        selected_connectivity, selected_distance_matrix, diameters, hardness, electronegativity = self.getParameters(
+            mol, cg, atom_types)
         bondHardness = mol.get_bond_hardness(hardness)
 
         # atomic J matrix with diagonal scaled by lam^2
-        coulomb = self.coulombIntegrals(max_order, mol, n_atoms, diameters)
+        coulomb = self.coulombIntegrals(max_order, n_atoms, selected_connectivity, selected_distance_matrix, diameters)
         scalingFactor1 = lam * lam
         JMatrix = scalingFactor1 * np.diag(hardness) + coulomb
 
@@ -804,8 +849,9 @@ class O_N(Charge_group_type):
                             for x in range(len(indexes)):
                                 for y in range(len(indexes[x])):
                                     idx3 = indexes[x][y]
+                                    bond_1_3 = mol.are_bonded(idx1, idx3)
 
-                                    if atm1.isNrmNB(idx3):
+                                    if bond_1_3:
                                         iac3 = atoms[idx3].iac
                                         if iac1 in self.CARBON_NH and iac3 in self.CARBON_NH:
                                             continue

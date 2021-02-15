@@ -43,6 +43,8 @@ def computeCR(cr, scl_sig_NEI, scl_eps_NEI, molecules, atomTypes, matrix):
 	"""Computes combining rule for each molecule.
 
 	:param cr: (combiningRule) Combining rule.
+	:param scl_sig_NEI: (float) Scaling factor for 1-4 sigma.
+	:param scl_eps_NEI: (float) Scaling factor for 1-4 epsilon.
 	:param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
 	:param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
 	:param matrix: (Matrix) Matrix with usage of C12(II) parameters.
@@ -53,7 +55,7 @@ def computeCR(cr, scl_sig_NEI, scl_eps_NEI, molecules, atomTypes, matrix):
 		mol = molecules[cod]
 
 		for prm in mol.parameters:
-			prm.computeCR(cr, atomTypes, matrix)
+			prm.computeCR(cr, scl_sig_NEI, scl_eps_NEI, atomTypes, matrix)
 
 
 def createEffectivePrms(atomTypes, molecules, charge_group_type):

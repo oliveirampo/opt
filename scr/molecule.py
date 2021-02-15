@@ -173,8 +173,8 @@ class Molecule:
 		return self._sens
 
 	@CGs.setter
-	def CGs(self, n):
-		self._CGs = np.asarray(n)
+	def CGs(self, list_of_lists):
+		self._CGs = np.array([np.array(arr) for arr in list_of_lists])
 
 	@run.setter
 	def run(self, n):

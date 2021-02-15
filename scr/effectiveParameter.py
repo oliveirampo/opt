@@ -21,10 +21,10 @@ import math
 import myExceptions
 
 
-def createEffectiveParameterFactory(type, idx, type_c, type_14, iac1, iac2, typAtm1, typAtm2, val):
+def createEffectiveParameterFactory(typ, idx, type_c, type_14, iac1, iac2, typAtm1, typAtm2, val):
 	"""Creates effective parameter objects given variable 'type'.
 
-	:param type:
+	:param typ:
 	:param idx:
 	:param type_c:
 	:param type_14:
@@ -51,18 +51,18 @@ def createEffectiveParameterFactory(type, idx, type_c, type_14, iac1, iac2, typA
 				Writes parameter values to txt file.
 		"""
 
-		def	__init__(self, idx, typAtm, val):
+		def __init__(self, idx_value, typAtm, value):
 			"""Constructs all the necessary attributes for the given LJ parameter.
 
-			:param idx: (int) Index.
+			:param idx_value: (int) Index.
 			:param typAtm: (str) Type/name of atom.
-			:param val: (float) Value of parameter.
+			:param value: (float) Value of parameter.
 			"""
 
-			self._idx = idx
+			self._idx = idx_value
 			self._typAtm = typAtm
-			self._ori = float(val)
-			self._cur = float(val)
+			self._ori = float(value)
+			self._cur = float(value)
 			self._typ = 'CHG_ATM'
 
 			s = '{}_1_{}'.format(self._typ, self._idx)
@@ -88,7 +88,7 @@ def createEffectiveParameterFactory(type, idx, type_c, type_14, iac1, iac2, typA
 		def cur(self, value):
 			self._cur = value
 
-		def computeCR(self, cr, atomTypes, matrix):
+		def computeCR(self, cr, scl_sig_NEI, scl_eps_NEI, atomTypes, matrix):
 			"""No combining rule for Charge object."""
 			pass
 
@@ -98,13 +98,14 @@ def createEffectiveParameterFactory(type, idx, type_c, type_14, iac1, iac2, typA
 			:param out: (output object) Output file.
 			"""
 
-			idx = self._idx
-			typ = self._typ
+			idx_value = self._idx
+			typ_value = self._typ
 			typAtm = self._typAtm
-			val = self._cur
+			value = self._cur
 
-			out.write('{0:>4} {1:>7} {2:>3} {3:>3} {4:<5} {5:3} {6:>15.4f} {7:>13.4f}\n'
-					  .format(idx, typ, '1', idx, 'MOLEC', typAtm, 0.0, val))
+			out.write('{0:>4} {1:>7} {2:>3} {3:>3} {4:<5} {5:3} {6:>15.4f} {7:>13.4f}\n'.format(idx_value, typ_value,
+																							'1', idx_value, 'MOLEC',
+																							typAtm, 0.0, value))
 
 	class LJ(EffectiveParameter):
 		"""LJ effective parameter.
@@ -192,10 +193,12 @@ def createEffectiveParameterFactory(type, idx, type_c, type_14, iac1, iac2, typA
 		def nam(self):
 			return self._nam
 
-		def computeCR(self, cr, atomTypes, matrix):
+		def computeCR(self, cr, scl_sig_NEI, scl_eps_NEI, atomTypes, matrix):
 			"""Computes combining rule.
 
 			:param cr: (CR) Combining rule.
+			:param scl_sig_NEI: (float) Scaling factor for 1-4 sigma.
+			:param scl_eps_NEI: (float) Scaling factor for 1-4 epsilon.
 			:param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
 			:param matrix: (Matrix) Matrix with usage of C12(II) parameters.
 			"""
@@ -203,47 +206,10 @@ def createEffectiveParameterFactory(type, idx, type_c, type_14, iac1, iac2, typA
 			iac1 = atomTypes[self.iac1]
 			iac2 = atomTypes[self.iac2]
 
-			sigi_nrm = iac1.sig.cur
-			sigj_nrm = iac2.sig.cur
+			prm_type = self._type_14  # NRM or NEI
+			c6, c12 = prm_type.computeCR(cr, scl_sig_NEI, scl_eps_NEI, iac1, iac2, matrix)
 
-			epsi_nrm = iac1.eps.cur
-			epsj_nrm = iac2.eps.cur
-
-			if iac1.iac in matrix:
-				if iac2.iac in matrix[iac1.iac]:
-					sigi_nrm = iac1.sig_2.cur
-					epsi_nrm = iac1.eps_2.cur
-
-			if iac2.iac in matrix:
-				if iac1.iac in matrix[iac2.iac]:
-					sigj_nrm = iac2.sig_2.cur
-					epsj_nrm = iac2.eps_2.cur
-
-			sigi_nei = sigi_nrm
-			epsi_nei = epsi_nrm
-			sigj_nei = sigj_nrm
-			epsj_nei = epsj_nrm
-			if iac1.fixed_nei:
-				sigi_nei = iac1.sig_nei
-				epsi_nei = iac1.eps_nei
-			if iac2.fixed_nei:
-				sigj_nei = iac2.sig_nei
-				epsj_nei = iac2.eps_nei
-
-			sigi, epsi = self.type_14.getVal(sigi_nrm, epsi_nrm, sigi_nei, epsi_nei)
-			sigj, epsj = self.type_14.getVal(sigj_nrm, epsj_nrm, sigj_nei, epsj_nei)
-
-			sigij = cr.getSigma(sigi, sigj)
-			epsij = cr.getEpsilon(epsi, epsj, sigi, sigj)
-
-			if sigij == 0.0:
-				c6 = 0.0
-				c12 = 0.0
-			else:
-				c6 = 4.0 * epsij * math.exp(6.0 * math.log(sigij))
-				c12 = 4.0 * epsij * math.exp(12.0 * math.log(sigij))
-
-			val = self._type_c.getVal(c6, c12)
+			val = self._type_c.getVal(c6, c12, '', '')
 			self._cur = val
 
 		def writePrm(self, out):
@@ -265,12 +231,12 @@ def createEffectiveParameterFactory(type, idx, type_c, type_14, iac1, iac2, typA
 			out.write('{0:4} {1:>7} {2:>3} {3:>3} {4:<5} {5:5} {6:>13.4f} {7:13.6e}\n'
 					  .format(idx, prmName, iac1, iac2, typAtm1, typAtm2, 0.0, val))
 
-	if type == 'LJ':
+	if typ == 'LJ':
 		return LJ(idx, type_c, type_14, iac1, iac2, typAtm1, typAtm2, val)
-	elif type == 'Charge':
+	elif typ == 'Charge':
 		return Charge(idx, typAtm1, val)
 	else:
-		raise myExceptions.ClassNotImplemented(type, 'effectiveParameter')
+		raise myExceptions.ClassNotImplemented(typ, 'effectiveParameter')
 
 
 class EffectiveParameter(ABC):
@@ -285,7 +251,7 @@ class EffectiveParameter(ABC):
 	"""
 
 	@abstractmethod
-	def computeCR(self, cr, atomTypes, matrix):
+	def computeCR(self, cr, scl_sig_NEI, scl_eps_NEI, atomTypes, matrix):
 		"""Computes combining rule."""
 		pass
 
@@ -308,14 +274,17 @@ class ParameterType(metaclass=ABCMeta):
 			Returns type of parameter.
 	"""
 
-	@classmethod
-	def __subclasshook__(cls, subclass):
-		return (hasattr(subclass, 'getVal') and
-				callable(subclass.getVal) and
-				hasattr(subclass, 'getType') and
-				callable(subclass.getType) or
-				NotImplemented
-				)
+	@abstractmethod
+	def getVal(self, sig_nrm, eps_nrm, sig_nei, eps_nei):
+		pass
+
+	@abstractmethod
+	def getType(self):
+		pass
+
+	@abstractmethod
+	def computeCR(self, cr, scl_sig_NEI, scl_eps_NEI, iac1, iac2, matrix):
+		pass
 
 
 class NRM(ParameterType):
@@ -348,6 +317,68 @@ class NRM(ParameterType):
 
 		return 'NRM'
 
+	def computeCR(self, cr, scl_sig_NEI, scl_eps_NEI, iac1, iac2, matrix):
+		"""Computes combining rule.
+
+		:param cr: (CR) Combining rule.
+		:param scl_sig_NEI: (float) Scaling factor for 1-4 sigma.
+		:param scl_eps_NEI: (float) Scaling factor for 1-4 epsilon.
+		:param iac1: (IAC) Atom type 1.
+		:param iac2: (IAC) Atom type 2.
+		:param matrix: (Matrix) Matrix with usage of C12(II) parameters.
+		"""
+
+		sigi = iac1.sig.cur
+		sigj = iac2.sig.cur
+		epsi = iac1.eps.cur
+		epsj = iac2.eps.cur
+
+		sigij_backup = cr.getSigma(sigi, sigj)
+		epsij_backup = cr.getEpsilon(epsi, epsj, sigi, sigj)
+
+		if iac1.iac in matrix:
+			if iac2.iac in matrix[iac1.iac]:
+				sigi = iac1.sig_2.cur
+				epsi = iac1.eps_2.cur
+
+		if iac2.iac in matrix:
+			if iac1.iac in matrix[iac2.iac]:
+				sigj = iac2.sig_2.cur
+				epsj = iac2.eps_2.cur
+
+		sigij = cr.getSigma(sigi, sigj)
+		epsij = cr.getEpsilon(epsi, epsj, sigi, sigj)
+
+		sigi_2_rng = iac1.sig_2.rng
+		sigj_2_rng = iac2.sig_2.rng
+		epsi_2_rng = iac1.eps_2.rng
+		epsj_2_rng = iac2.eps_2.rng
+		# In case sig_2 OR eps_2 is optimized,
+		# make sure that the use of sig_2 and eps_2 leads to the same C6 value as the use of sig and eps.
+		if (epsi_2_rng != 0) or (epsj_2_rng != 0):
+			if epsij != 0.0:
+				c6 = 4.0 * epsij_backup * math.exp(6.0 * math.log(sigij_backup))
+				sigij = math.exp((1.0 / 6.0) * math.log(c6 / (4 * epsij)))
+
+				if iac1.iac == iac2.iac:
+					iac1.sig_2.cur = sigij
+
+		elif (sigi_2_rng != 0) or (sigj_2_rng != 0):
+			if sigij != 0.0:
+				c6 = 4.0 * epsij_backup * math.exp(6.0 * math.log(sigij_backup))
+				epsij = c6 / (4 * math.exp(6 * math.log(sigij)))
+
+				if iac1.iac == iac2.iac:
+					iac1.eps_2.cur = epsij
+
+		c6 = 0.0
+		c12 = 0.0
+		if sigij != 0.0:
+			c6 = 4.0 * epsij * math.exp(6.0 * math.log(sigij))
+			c12 = 4.0 * epsij * math.exp(12.0 * math.log(sigij))
+
+		return c6, c12
+
 
 class NEI(ParameterType):
 	"""Parameter type = NEI
@@ -379,6 +410,45 @@ class NEI(ParameterType):
 
 		return 'NEI'
 
+	def computeCR(self, cr, scl_sig_NEI, scl_eps_NEI, iac1, iac2, matrix):
+		"""Computes combining rule.
+
+		:param cr: (CR) Combining rule.
+		:param scl_sig_NEI: (float) Scaling factor for 1-4 sigma.
+		:param scl_eps_NEI: (float) Scaling factor for 1-4 epsilon.
+		:param iac1: (IAC) Atom type 1.
+		:param iac2: (IAC) Atom type 2.
+		:param matrix: (Matrix) Matrix with usage of C12(II) parameters.
+		"""
+
+		sigi_nrm = iac1.sig.cur
+		sigj_nrm = iac2.sig.cur
+		epsi_nrm = iac1.eps.cur
+		epsj_nrm = iac2.eps.cur
+
+		sigi_nei = sigi_nrm * scl_sig_NEI
+		sigj_nei = sigj_nrm * scl_sig_NEI
+		epsi_nei = epsi_nrm * scl_eps_NEI
+		epsj_nei = epsj_nrm * scl_eps_NEI
+
+		if iac1.fixed_nei:
+			sigi_nei = iac1.sig_nei
+			epsi_nei = iac1.eps_nei
+		if iac2.fixed_nei:
+			sigj_nei = iac2.sig_nei
+			epsj_nei = iac2.eps_nei
+
+		sigij = cr.getSigma(sigi_nei, sigj_nei)
+		epsij = cr.getEpsilon(epsi_nei, epsj_nei, sigi_nei, sigj_nei)
+
+		c6 = 0.0
+		c12 = 0.0
+		if sigij != 0.0:
+			c6 = 4.0 * epsij * math.exp(6.0 * math.log(sigij))
+			c12 = 4.0 * epsij * math.exp(12.0 * math.log(sigij))
+
+		return c6, c12
+
 
 class C6(ParameterType):
 	"""Parameter type = C6
@@ -391,11 +461,13 @@ class C6(ParameterType):
 		Returns type of parameter.
 	"""
 
-	def getVal(self, c6, c12):
+	def getVal(self, c6, c12, dummy_1, dummy_2):
 		"""Return 'c6' value of parameter.
 
 		:param c6: (float) C6 value.
 		:param c12: (float) C12 value.
+		:param dummy_1: (float) Dummy variable (not used).
+		:param dummy_2: (float) Dummy variable (not used).
 		:return:
 			c6: (float) C6 value.
 		"""
@@ -406,6 +478,9 @@ class C6(ParameterType):
 		"""Returns type of parameter."""
 
 		return 'C06'
+
+	def computeCR(self, cr, scl_sig_NEI, scl_eps_NEI, iac1, iac2, matrix):
+		raise myExceptions.ClassNotImplemented('C12', 'computeCR()')
 
 
 class C12(ParameterType):
@@ -419,11 +494,13 @@ class C12(ParameterType):
 		Returns type of parameter.
 	"""
 
-	def getVal(self, c6, c12):
+	def getVal(self, c6, c12, dummy_1, dummy_2):
 		"""Return 'c12' value of parameter.
 
 		:param c6: (float) C6 value.
 		:param c12: (float) C12 value.
+		:param dummy_1: (float) Dummy variable (not used).
+		:param dummy_2: (float) Dummy variable (not used).
 		:return:
 			c12: (float) C12 value.
 		"""
@@ -434,3 +511,6 @@ class C12(ParameterType):
 		"""Returns type of parameter."""
 
 		return 'C12'
+
+	def computeCR(self, cr, scl_sig_NEI, scl_eps_NEI, iac1, iac2, matrix):
+		raise myExceptions.ClassNotImplemented('C12', 'computeCR()')

@@ -7,7 +7,7 @@ Classes:
 	Ana(Action)
 	Plot(Action)
 	Opt(Action)
-	Sub(Action) TODO
+	Sub(Action)
 """
 
 from abc import ABC, abstractmethod
@@ -52,7 +52,7 @@ class Action(ABC):
 	def get_choices():
 		"""Returns list of possible choices of actions."""
 
-		return ['GEN', 'ANA', 'OPT', 'PLOT']
+		return ['GEN', 'ANA', 'OPT', 'SUB', 'PLOT']
 
 	@staticmethod
 	def get_object(runType, it):
@@ -63,7 +63,7 @@ class Action(ABC):
 		:return: One of the classes that implements Action.
 		"""
 
-		classes = {"GEN": Gen, "ANA": Ana,  "PLOT": Plot, "OPT": Opt}
+		classes = {"GEN": Gen, "ANA": Ana,  "PLOT": Plot, "SUB": Sub, "OPT": Opt}
 
 		if runType not in classes:
 			raise myExceptions.ClassNotImplemented(runType, 'Action')
@@ -137,7 +137,6 @@ class Gen(Action):
 
 		The number of files for each type is determined by the variable nJobs in the conf.
 		"""
-		writeOutFiles.writeMolFile(self.it, molecules)
 
 		kap = conf.kappa
 		lam = conf.lam
@@ -150,8 +149,6 @@ class Gen(Action):
 		samTemplate = IO.readSamTemplateFile(conf.samTemplateFile)
 		writeOutFiles.writeSamFile(conf, molecules, samTemplate)
 		writeOutFiles.copyCOTO(molecules)
-
-		writeOutFiles.writeSubScript(conf, molecules)
 
 
 class Ana(Action):
@@ -185,6 +182,12 @@ class Plot(Action):
 			os.makedirs(plotDir)
 
 		plot.run(conf)
+
+
+class Sub(Action):
+	"""Submits jobs to run the simulations."""
+	def run(self, conf, molecules, atomTypes):
+		writeOutFiles.writeSubScript(conf, molecules)
 
 
 class Opt(Action):

@@ -121,11 +121,11 @@ def readConf(conf, fileName):
 		key = "cr"
 		conf.cr = confDict[key]
 
-		key = "charge_distribution"
-		conf.charge_distribution_method = confDict[key]
-
 		key = "charge_group_type"
 		conf.charge_group_type = confDict[key]
+
+		key = "charge_distribution"
+		conf.charge_distribution_method = confDict[key]
 
 		key = "kappa"
 		conf.kappa = confDict[key]

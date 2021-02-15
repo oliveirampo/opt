@@ -29,3 +29,4 @@ class ClassNotImplemented(NotImplementedError):
 	def __init__(self, className, functionName):
 		s = '\n\tClass not implemented ({}) in module {}'.format(className, functionName)
 		super().__init__(s)
+

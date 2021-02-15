@@ -36,35 +36,6 @@ def copyCOTO(molecules):
         copyfile(cfgLiq, cfgDir + cod + '_liq_ini.cfg')
 
 
-def writeMolFile(it, molecules):
-    """Writes file with information about molecule.
-
-    :param it: (int) Iteration number.
-    :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
-    """
-
-    samDir = 'sam_' + str(it)
-    if not os.path.exists(samDir):
-        os.makedirs(samDir)
-
-    for cod in molecules:
-        samFile = open(samDir + '/' + cod + '.mol', 'w')
-
-        mol = molecules[cod]
-        liq_pre = mol.pre_sim * 0.06022141790
-
-        samFile.write('mol_nam = {}\n'.format(cod))
-        samFile.write('prm_mod = param_{}\n'.format(cod))
-        samFile.write('liq_eps = {}\n'.format(mol.eps_ref))
-        samFile.write('liq_pre = {0:.6e}\n'.format(liq_pre))
-        samFile.write('liq_tem = {}\n'.format(mol.tem_sim))
-        samFile.write('gas_tem = {}\n'.format(mol.tem_sim))
-        samFile.write('bar_pre = {0:.6e}\n'.format(liq_pre))
-        samFile.write('the_tem = {}\n'.format(mol.tem_sim))
-
-        samFile.close()
-
-
 def writeSamFile(conf, molecules, samTemplate):
     """Writes SAM files.
 
@@ -115,10 +86,27 @@ def writeSamFile(conf, molecules, samTemplate):
                     elif row[0] == 'prt_prp_frq':
                         lines[j][2] = prt_prp_frq
 
+                    elif row[0] == 'prm_mod':
+                        lines[j][2] = 'param_{}.mod'.format(cod)
+
                     s = ' '.join(lines[j])
                     out.write('{}\n'.format(s))
 
                     j += 1
+
+                # append information about molecule
+
+                mol = molecules[cod]
+                liq_pre = mol.pre_sim * 0.06022141790
+
+                out.write('mol_nam = {}\n'.format(cod))
+                out.write('prm_mod = param_{}\n'.format(cod))
+                out.write('liq_eps = {}\n'.format(mol.eps_ref))
+                out.write('liq_pre = {0:.6e}\n'.format(liq_pre))
+                out.write('liq_tem = {}\n'.format(mol.tem_sim))
+                out.write('gas_tem = {}\n'.format(mol.tem_sim))
+                out.write('bar_pre = {0:.6e}\n'.format(liq_pre))
+                out.write('the_tem = {}\n'.format(mol.tem_sim))
 
 
 def writeParamMod(it, molecules):
@@ -145,7 +133,7 @@ def writeParamMod(it, molecules):
 
 
 def writeSubScript(conf, molecules):
-    """Writes submission files.
+    """Writes submission files and submits jobs.
 
     :param conf: (configuration.Conf) Configuration object.
     :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
@@ -165,8 +153,7 @@ def writeSubScript(conf, molecules):
 
     # create scr files with bash script
     for cod in molecules:
-        cmd = '../scr/prepare.sh {} {} {} {}' \
-            .format(cod, it, nJobs, wall_time)
+        cmd = '../scr/prepare.sh {} {} {} {}'.format(cod, it, nJobs, wall_time)
         os.system(cmd)
 
     # check if all files were created

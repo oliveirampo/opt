@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 cmp=$1
 it=$2
 nJobs=$3
@@ -35,6 +34,10 @@ for i in `seq 0 $nJobs`; do
 	sed -i "s/JOB_MAPE/${i}/g"			$f
 
 	sed -i "s/MOL_FILE_MAPE/${molFileSed}/g"	$f
+
+	samFile=${samDir}/${cmp}_${i}.sam
+	samFileSed=${samFile//\//\\\/}
+	sed -i "s/SAM_FILE_MAPE/${samFileSed}/g"        $f
 
 	if [ $i -ne $nJobs ]; then
 		j=$((i+1))

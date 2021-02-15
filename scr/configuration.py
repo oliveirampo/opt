@@ -334,6 +334,16 @@ class Conf:
     @charge_distribution_method.setter
     def charge_distribution_method(self, n):
         method = ChargeDistribution.ChargeDistributionMethod.get_object(n)
+
+        if isinstance(method, ChargeDistribution.BondChargeDistributionMethod):
+            if not isinstance(self._charge_group_type, ChargeDistribution.Atomic):
+                print(
+                    'This charge distribution method ({}) is only compatible with ({}) charge group.\n'
+                    'Try ({}) charge group, for instance.'.format(type(method), type(self._charge_group_type),
+                                                                  type(ChargeDistribution.Atomic())))
+
+                sys.exit(123)
+
         self._charge_distribution_method = method
 
     @charge_group_type.setter
@@ -351,10 +361,12 @@ class Conf:
 
     @scl_sig_NEI.setter
     def scl_sig_NEI(self, n):
+        n = float(n)
         self._scl_sig_NEI = n
 
     @scl_eps_NEI.setter
     def scl_eps_NEI(self, n):
+        n = float(n)
         self._scl_eps_NEI = n
 
     @ignoreIAC.setter

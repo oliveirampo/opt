@@ -93,7 +93,7 @@ def addSimprop(conf, mol):
 
         nRow = os.popen('wc ' + outFileName).read().split()[0]
         # if nRow is not correct ignore molecule (set run to 0)
-        if nRow not in ['100', '120', '240', '1000']:
+        if nRow not in ['100', '120', '200', '240']:
             mol.run = 0.0
             return
 
