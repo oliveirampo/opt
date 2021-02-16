@@ -42,7 +42,7 @@ def run(conf):
     data = getData(it, plotConf)
 
     plot_data(plotConf, data)
-    plot_target_function(it, plotConf)
+    # plot_target_function(it, plotConf)
 
 
 def getData(it, plotConf):
@@ -111,7 +111,8 @@ def plot_data(plotConf, data):
 
     plotSettings = plotConf.settings
 
-    property_codes = [col.replace('_exp', '') for col in data.columns.to_list() if 'exp' in col]
+    # property_codes = [col.replace('_exp', '') for col in data.columns.to_list() if 'exp' in col]
+    property_codes = [col.replace('_exp', '') for col in data.columns.tolist() if 'exp' in col]
 
     for prop_code in property_codes:
         df = data[~pd.isnull(data['w_' + prop_code])]
@@ -301,7 +302,8 @@ def plot_target_function_helper(actual, predicted, plotDir):
     ax.legend(loc='upper right', frameon=False, fontsize=14)
     plt.tight_layout()
 
-    fig.savefig(plotDir + 'target_function.png')
+    file_name = '{}/target_function.png'.format(plotDir)
+    fig.savefig(file_name)
     plt.close(fig)
 
 

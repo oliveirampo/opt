@@ -58,7 +58,7 @@ Required directories:
 
 ## Installation
 
-This pipeline uses Python 3
+This pipeline uses Python 3.7
 and default packages for data visualization
 and statistical analysis.
 
