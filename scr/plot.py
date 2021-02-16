@@ -42,7 +42,9 @@ def run(conf):
     data = getData(it, plotConf)
 
     plot_data(plotConf, data)
+
     # plot_target_function(it, plotConf)
+    # plot_prm(it, plotConf)
 
 
 def getData(it, plotConf):
@@ -130,7 +132,7 @@ def plot_exp_vs_sim(df, plotSettings, prop_code, name, plotDir):
     """Helper function to plot experimental data versus simulation results.
 
     :param df: (pandas DataFrame) Table with data.
-    :param plotSettings: (PlotConf) PlotConf object.
+    :param plotSettings: (Dictionary) Settings for plot.
     :param prop_code: (str) Property code (dns, hvp).
     :param name: (str) Name of plot (all).
     :param plotDir: (str) Directory of plots.
@@ -307,14 +309,15 @@ def plot_target_function_helper(actual, predicted, plotDir):
     plt.close(fig)
 
 
-def plot_prm(it, plotConf, plotDir):
+def plot_prm(it, plotConf):
     """Plot evolution of force-field parameter along iteration number.
 
     :param it: (int) Iteration Number.
     :param plotConf: plotConf: (PlotConf) Plot configuration object.
-    :param plotDir: (str) Directory where plot will be saved.
     :return:
     """
+
+    plotDir = plotConf.plotDir
 
     data = pd.DataFrame()
 
@@ -369,8 +372,12 @@ def plot_prm_NB(data, plotConf, plotDir):
 
     iac = data.iac.unique()
     iacName = iac
-    if 'iac_name' in plotConf:
-        iacName = plotConf['iac_name']
+
+    if len(plotConf.map_iac_name) == 0:
+        print('Define map from iac code to name.')
+        sys.exit(1)
+
+    iacName = plotConf.map_iac_name  # dict
 
     idx = 0
     for i in iacName:
@@ -428,7 +435,8 @@ def plot_prm_NB(data, plotConf, plotDir):
         # axes[0].set_ylim([0.22, 0.36])
         # axes[1].set_ylim([0.10, 0.90])
 
-    fig.savefig(plotDir + 'prm_NB.png')
+    file_name = '{}/prm_NB.png'.format(plotDir)
+    fig.savefig(file_name)
     plt.close(fig)
 
 
