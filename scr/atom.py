@@ -24,7 +24,7 @@ class Atom:
 		self._ignore = False
 
 	def __str__(self):
-		s = '{:3} {:3} {} {} {}'.format(self._idx, self._iac, self._nam, self._bnd_nrm, self._charge.cur)
+		s = '{:3} {:3} {} {}'.format(self._idx, self._iac, self._nam, self._charge.cur)
 		return s
 
 	@property

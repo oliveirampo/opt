@@ -14,6 +14,7 @@ def main():
 		OPT: optimizes force-field parameters.
 		SUB: submits jobs to run on euler (https://scicomp.ethz.ch/wiki/Main_Page).
 		PLOT: plots main simulation results.
+		MTB: Creates GROMOS coordinate and topology (mtb) files.
 	"""
 
 	try:

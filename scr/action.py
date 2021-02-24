@@ -8,6 +8,7 @@ Classes:
 	Plot(Action)
 	Opt(Action)
 	Sub(Action)
+	GROMOSCoTo(Action)
 """
 
 from abc import ABC, abstractmethod
@@ -18,9 +19,11 @@ import IO
 import ana
 import plot
 import optimize
+import gromos_mtb
+import myExceptions
+import createNewIFP
 import writeOutFiles
 import molecules_utils
-import myExceptions
 
 
 class Action(ABC):
@@ -52,7 +55,7 @@ class Action(ABC):
 	def get_choices():
 		"""Returns list of possible choices of actions."""
 
-		return ['GEN', 'ANA', 'OPT', 'SUB', 'PLOT']
+		return ['GEN', 'ANA', 'OPT', 'SUB', 'PLOT', 'MTB']
 
 	@staticmethod
 	def get_object(runType, it):
@@ -63,7 +66,7 @@ class Action(ABC):
 		:return: One of the classes that implements Action.
 		"""
 
-		classes = {"GEN": Gen, "ANA": Ana,  "PLOT": Plot, "SUB": Sub, "OPT": Opt}
+		classes = {"GEN": Gen, "ANA": Ana,  "PLOT": Plot, "SUB": Sub, "OPT": Opt, "MTB": MTB}
 
 		if runType not in classes:
 			raise myExceptions.ClassNotImplemented(runType, 'Action')
@@ -212,3 +215,38 @@ class Opt(Action):
 		"""
 
 		optimize.runOptimization(conf, molecules, atomTypes)
+
+
+class MTB(Action):
+	"""Updates GROMOS mtb files with the final force-field parameters."""
+
+	def __init__(self, it):
+		"""Constructs all the necessary attributes for the given action.
+
+		:param it: (int) Iteration number.
+		"""
+
+		Action.__init__(self, it)
+
+	def run(self, conf, molecules, atomTypes):
+		"""Reads parameters, calculates effective parameters to each molecule and updates mtb file.
+
+		:param conf: (configuration.Conf) Configuration object
+		:param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+		:param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
+		:return:
+		"""
+
+		mtbDir = 'mtb'
+		mtbGROMOSDir = 'mtb_GROMOS'
+
+		kap = conf.kappa
+		lam = conf.lam
+
+		molecules_utils.computeChargeDistribution(conf.charge_distribution_method, molecules, atomTypes, kap, lam)
+		molecules_utils.computeCR(conf.cr, conf.scl_sig_NEI, conf.scl_eps_NEI, molecules, atomTypes, conf.matrix)
+
+		# create new IFP file with N new dummy atom types.
+		newIacDict = createNewIFP.create(conf, atomTypes)
+
+		gromos_mtb.updateMTB(newIacDict, atomTypes, molecules, mtbDir, mtbGROMOSDir)
