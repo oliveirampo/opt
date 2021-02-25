@@ -80,6 +80,20 @@ def create(conf, parameters):
     writeOut(row1, row2, atomTypes, fileName, outName)
 
     # add other IACs.
+    addOtherIAC(newIacDict)
+
+    return newIacDict
+
+
+def addOtherIAC(newIacDict):
+    """Adds indexes of other IAC to dictionary.
+
+    :param newIacDict:
+    :return:
+        newIacDict: (dict) Dictionary that maps IAC idx to first idx in list of symmetric IAC indexes.
+                        If there are none, the idx is mapped to itself.
+    """
+
     # maxIac = 0
     # for key in newIacDict:
     #     iac = newIacDict[key]
@@ -97,7 +111,17 @@ def create(conf, parameters):
         if iac not in newIacDict:
             newIacDict[iac] = iac
 
-    return newIacDict
+    # specific for O+N family
+    for pair in [[103, 13], [104, 14], [105, 15], [106, 16],
+                 [115, 13], [116, 14], [117, 15], [118, 16], [119, 13], [120, 14], [121, 15], [122, 16],
+                 [21, 21], [111, 13], [112, 14], [113, 15], [114, 16],
+                 [97, 21],
+                 [145, 21], [144, 13], [142, 14], [140, 15], [138, 16],
+                 [150, 21], [146, 13], [147, 14], [148, 15], [149, 16]]:
+
+        oldIAC = pair[0]
+        newIAC = pair[1]
+        newIacDict[oldIAC] = newIAC
 
 
 def getLJAtomTypes(parameters):

@@ -119,6 +119,22 @@ def readMTBCHG(fileName):
     return rows, mtb
 
 
+def formatStrCHG(r):
+    """Returns formatted string with charge.
+
+    :param r: (list) Row.
+    :return:
+        s: (str) Formatted string.
+    """
+
+    charge = float(r[4])
+    r[4] = '{:.3f}'.format(charge)
+
+    nb = '     '.join(r[7:])
+    s = '{:>5} {:>2} {:>6} {:>4} {:>7} {:>2} {:>3}     {}\n'.format(r[0], r[1], r[2], r[3], r[4], r[5], r[6], nb)
+    return s
+
+
 def updateCharges(rows, mtb, charges):
     """Helper function to update charges in mtb file.
 
@@ -149,20 +165,9 @@ def updateCharges(rows, mtb, charges):
             pos = idx - 1
             line[4] = selectedCharges[pos]
             s = formatStrCHG(line)
+
+            selectedRows[r] = s
             mtb[r] = s
-
-
-def formatStrCHG(r):
-    """Returns formatted string with charge.
-
-    :param r: (list) Row.
-    :return:
-        s: (str) Formatted string.
-    """
-
-    nb = '     '.join(r[7:])
-    s = '{:>5} {:>2} {:>6} {:>4} {:>7} {:>2} {:>3}     {}\n'.format(r[0], r[1], r[2], r[3], r[4], r[5], r[6], nb)
-    return s
 
 
 def updateIAC(rows, mtb, newIacDict):
@@ -198,6 +203,8 @@ def updateIAC(rows, mtb, newIacDict):
             newIac = newIacDict[iac]
             line[2] = newIac
             s = formatStrCHG(line)
+
+            selectedRows[r] = s
             mtb[r] = s
 
 
