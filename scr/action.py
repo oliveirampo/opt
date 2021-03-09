@@ -22,6 +22,7 @@ import optimize
 import gromos_mtb
 import myExceptions
 import createNewIFP
+import prepareFiles
 import writeOutFiles
 import molecules_utils
 
@@ -55,7 +56,7 @@ class Action(ABC):
 	def get_choices():
 		"""Returns list of possible choices of actions."""
 
-		return ['GEN', 'ANA', 'OPT', 'SUB', 'PLOT', 'MTB']
+		return ['PREP', 'GEN', 'ANA', 'OPT', 'SUB', 'PLOT', 'MTB']
 
 	@staticmethod
 	def get_object(runType, it):
@@ -66,7 +67,7 @@ class Action(ABC):
 		:return: One of the classes that implements Action.
 		"""
 
-		classes = {"GEN": Gen, "ANA": Ana,  "PLOT": Plot, "SUB": Sub, "OPT": Opt, "MTB": MTB}
+		classes = {"PREP": Prep, "GEN": Gen, "ANA": Ana,  "PLOT": Plot, "SUB": Sub, "OPT": Opt, "MTB": MTB}
 
 		if runType not in classes:
 			raise myExceptions.ClassNotImplemented(runType, 'Action')
@@ -77,7 +78,7 @@ class Action(ABC):
 
 	@staticmethod
 	def read_inp_files(conf):
-		"""Reads input files specified in the configuration file.
+		"""Reads input files specified in the configuration file
 
 		:param conf: (configuration.Conf) Configuration object read from configuration input file.
 		:return:
@@ -102,6 +103,20 @@ class Action(ABC):
 		# read matrix file
 		conf.matrix = IO.readMatrix(conf.matrixFile)
 
+		return molecules, atomTypes
+
+	@staticmethod
+	def read_extra_inp_files(conf, molecules, atomTypes):
+		"""Reads additional input files specified in the configuration file
+
+		:param conf: (configuration.Conf) Configuration object read from configuration input file.
+		:param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+		:param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
+		:return:
+			molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+			atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
+		"""
+
 		IO.readListAtom(conf, molecules, conf.atomListFile)
 		bnd, ang = IO.readRefBondAndAngle(conf.ifpFile)
 		IO.readListBond(bnd, molecules, conf.bondListFile)
@@ -109,6 +124,7 @@ class Action(ABC):
 		IO.readSymmetry(atomTypes, "sig", conf.symSigFile)
 		IO.readSymmetry(atomTypes, "eps", conf.symEpsFile)
 		molecules_utils.createEffectivePrms(atomTypes, molecules, conf.charge_group_type)
+
 		return molecules, atomTypes
 
 	@abstractmethod
@@ -122,8 +138,23 @@ class Action(ABC):
 		pass
 
 
+class Prep(Action):
+	"""Setups up default input files."""
+
+	def run(self, conf, molecules, atomTypes):
+		"""Setups up default input files.
+
+		:param conf: (configuration.Conf) Configuration object
+		:param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+		:param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
+		"""
+
+		prepareFiles.run(molecules)
+
+
 class Gen(Action):
 	"""Generates input files to run simulations."""
+
 	def run(self, conf, molecules, atomTypes):
 		"""Generates input files to run simulations.
 
@@ -140,6 +171,8 @@ class Gen(Action):
 
 		The number of files for each type is determined by the variable nJobs in the conf.
 		"""
+
+		molecules, atomTypes = Action.read_extra_inp_files(conf, molecules, atomTypes)
 
 		kap = conf.kappa
 		lam = conf.lam
@@ -167,6 +200,8 @@ class Ana(Action):
 		See ana.runAna method for more information.
 		"""
 
+		molecules, atomTypes = Action.read_extra_inp_files(conf, molecules, atomTypes)
+
 		anaDir = 'ana_{}'.format(conf.it)
 		if os.path.exists(anaDir):
 			shutil.rmtree(anaDir)
@@ -190,6 +225,7 @@ class Plot(Action):
 class Sub(Action):
 	"""Submits jobs to run the simulations."""
 	def run(self, conf, molecules, atomTypes):
+		molecules, atomTypes = Action.read_extra_inp_files(conf, molecules, atomTypes)
 		writeOutFiles.writeSubScript(conf, molecules)
 
 
@@ -214,6 +250,7 @@ class Opt(Action):
 		See optimize.runOptimization method for more information.
 		"""
 
+		molecules, atomTypes = Action.read_extra_inp_files(conf, molecules, atomTypes)
 		optimize.runOptimization(conf, molecules, atomTypes)
 
 
@@ -236,6 +273,8 @@ class MTB(Action):
 		:param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
 		:return:
 		"""
+
+		molecules, atomTypes = Action.read_extra_inp_files(conf, molecules, atomTypes)
 
 		mtbDir = 'mtb'
 		mtbGROMOSDir = 'mtb_GROMOS'

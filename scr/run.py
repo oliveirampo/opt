@@ -2,7 +2,8 @@ import traceback
 import sys
 
 from configuration import Conf
-import myExceptions, inpParser
+import myExceptions
+import inpParser
 
 
 def main():
