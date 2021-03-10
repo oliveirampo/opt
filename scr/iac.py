@@ -20,11 +20,12 @@ class IAC:
 		addSymmetry(symTyp, sym):
 	"""
 
-	def __init__(self, iac, typ, sig, rng_sig, eps, rng_eps, hrd, rng_hrd, eln, rng_eln, sig_2, rng_sig_2, eps_2, rng_eps_2):
+	def __init__(self, iac, typ, nam, sig, rng_sig, eps, rng_eps, hrd, rng_hrd, eln, rng_eln, sig_2, rng_sig_2, eps_2, rng_eps_2):
 		"""Constructs all the necessary attributes for the atom type.
 
 		:param iac: (int) Atom type index.
-		:param typ: (str) Type/name.
+		:param typ: (str) Type of atom.
+		:param nam: (str) Name of atom.
 		:param sig: (float) Sigma parameter.
 		:param rng_sig: (float) Range of sigma parameter variation.
 		:param eps: (float) Epsilon parameter
@@ -41,6 +42,7 @@ class IAC:
 
 		self._iac = int(iac)
 		self._typ = typ
+		self._nam = nam
 		self._sig = Parameter(iac, "sig", rng_sig, sig, sig, sig)
 		self._eps = Parameter(iac, "eps", rng_eps, eps, eps, eps)
 		self._hrd = Parameter(iac, "hrd", rng_hrd, hrd, hrd, hrd)
@@ -52,6 +54,8 @@ class IAC:
 		self._eps_nei = Parameter(iac, "eps_nei", rng_eps, eps, eps, eps)
 		self._fixed_nei = False
 
+		self._vdw = 0.0
+
 	@property
 	def iac(self):
 		return self._iac
@@ -59,6 +63,10 @@ class IAC:
 	@property
 	def typ(self):
 		return self._typ
+
+	@property
+	def nam(self):
+		return self._nam
 
 	@property
 	def sig(self):
@@ -96,6 +104,10 @@ class IAC:
 	def fixed_nei(self):
 		return self._fixed_nei
 
+	@property
+	def vdw(self):
+		return self._vdw
+
 	@sig_nei.setter
 	def sig_nei(self, n):
 		self._sig_nei = float(n)
@@ -107,6 +119,10 @@ class IAC:
 	@fixed_nei.setter
 	def fixed_nei(self, n):
 		self._fixed_nei = n
+
+	@vdw.setter
+	def vdw(self, n):
+		self._vdw = n
 
 	def __str__(self):
 		s = '\t{:3} {:5}'.format(self._iac, self._typ)
@@ -129,3 +145,18 @@ class IAC:
 		else:
 			print('Symmetry type not implemented: {}'.format(symTyp))
 			sys.exit(1)
+
+
+def add_vdw_radii(atomTypes, vdw):
+	"""Adds van der Waals radii to atom types.
+
+	:param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
+	:param vdw: (dict) Maps of atom type to van der Waals radius.
+	"""
+
+	for iac in atomTypes:
+		atomType = atomTypes[iac]
+		typ = atomType.typ
+
+		radius = vdw[typ]
+		atomType.vdw = radius

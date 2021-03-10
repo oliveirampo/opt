@@ -20,5 +20,5 @@ def getType(iac, atomTypes):
         print('No such IAC = {}'.format(iac))
         sys.exit(123)
 
-    return atomTypes[iac].typ
+    return atomTypes[iac].nam
 

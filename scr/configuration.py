@@ -53,6 +53,8 @@ class Conf:
         _samTemplateFile: (str) Input file with template to run SAMOS ("model.sam").
         _prmFile: (str) Input file with parameters at given iteration ("prm_[0-9]*.dat").
         _ifpFile: (str) IFP input file with parameters from 2016H66 force field ("2016H66_upd.ifp").
+        _vdWFile: (str) File with van der Waals radii.
+        _prmCrFile: (str) File with alpha parameter for linear combination of combining rules.
 
         _optDir: (str) Output directory.
         _outPrmFile: (str) Output file with optimized parameters at given iteration ("prm_[0-9]*.dat").
@@ -109,6 +111,8 @@ class Conf:
         self._samTemplateFile = '{}/{}'.format(self._inpDir, "model.sam")
         self._prmFile = '{}/{}_{}.dat'.format(self._inpDir, "prm", self._it)
         self._ifpFile = '{}'.format("prm/2016H66_upd.ifp")
+        self._vdWFile = '{}/{}'.format(self._inpDir, "vdw.dat")
+        self._prmCrFile = '{}/{}_cr_{}.dat'.format(self._inpDir, "prm", self._it)
 
         self._optDir = 'opt_{}'.format(self._it + 1)
         self._outPrmFile = '{}/{}_{}.dat'.format(self._inpDir, "prm", self._it + 1)
@@ -253,6 +257,14 @@ class Conf:
     @property
     def ifpFile(self):
         return self._ifpFile
+
+    @property
+    def vdWFile(self):
+        return self._vdWFile
+
+    @property
+    def prmCrFile(self):
+        return self._prmCrFile
 
     @property
     def samTemplateFile(self):

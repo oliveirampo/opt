@@ -277,20 +277,21 @@ def readPrm(fileName):
 				sys.exit(iac + ' is already in prm_IT.dat')
 
 			typ = line[1]
-			sig = float(line[2])
-			rng_sig = float(line[3])
-			eps = float(line[4])
-			rng_eps = float(line[5])
-			hrd = float(line[6])
-			rng_hrd = float(line[7])
-			eln = float(line[8])
-			rng_eln = float(line[9])
-			sig_2 = float(line[10])
-			rng_sig_2 = float(line[11])
-			eps_2 = float(line[12])
-			rng_eps_2 = float(line[13])
+			nam = line[2]
+			sig = float(line[3])
+			rng_sig = float(line[4])
+			eps = float(line[5])
+			rng_eps = float(line[6])
+			hrd = float(line[7])
+			rng_hrd = float(line[8])
+			eln = float(line[9])
+			rng_eln = float(line[10])
+			sig_2 = float(line[11])
+			rng_sig_2 = float(line[12])
+			eps_2 = float(line[13])
+			rng_eps_2 = float(line[14])
 
-			atomType = IAC(iac, typ, sig, rng_sig, eps, rng_eps, hrd, rng_hrd, eln, rng_eln, sig_2, rng_sig_2, eps_2, rng_eps_2)
+			atomType = IAC(iac, typ, nam, sig, rng_sig, eps, rng_eps, hrd, rng_hrd, eln, rng_eln, sig_2, rng_sig_2, eps_2, rng_eps_2)
 			atomTypes[iac] = atomType
 
 	return atomTypes
@@ -560,3 +561,46 @@ def readSamTemplateFile(fileName):
 
 	lines = readFile(fileName)
 	return lines
+
+
+def readVdWRadii(fileName):
+	"""Reads list of van der Waals radii.
+
+	:param fileName: (str) Input file name.
+	:return
+		vdw: (dict) Dictionary of van der Waals radii.
+	"""
+
+	lines = readFile(fileName)
+	vdw = {}
+
+	for line in lines:
+		if line[0][0] != '#':
+			atom = line[0]
+			radius = line[1]
+
+			vdw[atom] = radius
+	return vdw
+
+
+def readPrmCrFile(fileName):
+	"""Reads file with parameter for linear combination of combining rules.
+
+	:param fileName: (str) Name of file.
+	:return:
+	"""
+
+	lines = readFile(fileName)
+	crPrms = {}
+
+	for line in lines:
+		if line[0][0] != '#':
+			prm = line[0]
+			value = line[1]
+			range = line[2]
+
+			value = float(value)
+			range = float(range)
+
+			crPrms[prm] = {'val': value, 'rng': range}
+	return crPrms

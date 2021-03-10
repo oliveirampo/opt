@@ -39,10 +39,11 @@ def computeChargeDistribution(eem, molecules, atom_types, kap, lam):
 			eem.compute(max_order, mol, cg, atom_types, kap, lam)
 
 
-def computeCR(cr, scl_sig_NEI, scl_eps_NEI, molecules, atomTypes, matrix):
+def computeCR(cr, crPrms, scl_sig_NEI, scl_eps_NEI, molecules, atomTypes, matrix):
 	"""Computes combining rule for each molecule.
 
 	:param cr: (combiningRule) Combining rule.
+	:param crPrms: (dict) Parameters for linear combination of combining rules.
 	:param scl_sig_NEI: (float) Scaling factor for 1-4 sigma.
 	:param scl_eps_NEI: (float) Scaling factor for 1-4 epsilon.
 	:param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
@@ -55,7 +56,7 @@ def computeCR(cr, scl_sig_NEI, scl_eps_NEI, molecules, atomTypes, matrix):
 		mol = molecules[cod]
 
 		for prm in mol.parameters:
-			prm.computeCR(cr, scl_sig_NEI, scl_eps_NEI, atomTypes, matrix)
+			prm.computeCR(cr, crPrms, scl_sig_NEI, scl_eps_NEI, atomTypes, matrix)
 
 
 def createEffectivePrms(atomTypes, molecules, charge_group_type):

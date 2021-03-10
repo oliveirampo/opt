@@ -15,22 +15,24 @@ class CR(ABC):
 	"""
 
 	@abstractmethod
-	def getSigma(self, si, sj):
+	def getSigma(self, si, sj, alpha):
 		"""Returns sigma(i,j). 
 		
 		:param si: (float) Collision diameter of atom i.
 		:param sj: (float) Collision diameter of atom j.
+		:param alpha: (float) Parameter for linear combination.
 		"""
 		pass
 
 	@abstractmethod
-	def getEpsilon(self, ei, ej, si, sj):
+	def getEpsilon(self, ei, ej, si, sj, alpha):
 		"""Returns epsilon(i,j).
 
 		:param ei: (float) Well depth of atom i.
 		:param ej: (float) Well depth of atom j.
 		:param si: (float) Collision diameter of atom i.
 		:param sj: (float) Collision diameter of atom j.
+		:param alpha: (float) Parameter for linear combination.
 		"""
 		pass
 
@@ -53,24 +55,26 @@ class CR(ABC):
 class GeometricCR(CR):
 	"""Implements geometric combining rule."""
 
-	def getSigma(self, si, sj):
+	def getSigma(self, si, sj, alpha):
 		"""Returns sigma(i,j).
 
 		:param si: (float) Collision diameter of atom i.
 		:param sj: (float) Collision diameter of atom j.
+		:param alpha: (float) Parameter for linear combination.
 		:return:
 			sigma(i,j): (float) Collision diameter of atoms i and j.
 		"""
 
 		return math.sqrt(si * sj)
 
-	def getEpsilon(self, ei, ej, si, sj):
+	def getEpsilon(self, ei, ej, si, sj, alpha):
 		"""Returns epsilon(i,j).
 
 		:param ei: (float) Well depth of atom i.
 		:param ej: (float) Well depth of atom j.
 		:param si: (float) Collision diameter of atom i.
 		:param sj: (float) Collision diameter of atom j.
+		:param alpha: (float) Parameter for linear combination.
 		:return:
 			epsilon(i, j): (float) Well depth of atoms i and j.
 		"""
@@ -81,24 +85,26 @@ class GeometricCR(CR):
 class WaldmanHagler(CR):
 	"""Implements Waldman-Hagler combining rule."""
 
-	def getSigma(self, si, sj):
+	def getSigma(self, si, sj, alpha):
 		"""Returns sigma(i,j).
 
 		:param si: (float) Collision diameter of atom i.
 		:param sj: (float) Collision diameter of atom j.
+		:param alpha: (float) Parameter for linear combination.
 		:return:
 			sigma(i,j): (float) Collision diameter of atoms i and j.
 		"""
 
 		return math.pow(0.5 * (math.pow(si, 6) + math.pow(sj, 6)), 1.0/6.0)
 
-	def getEpsilon(self, ei, ej, si, sj):
+	def getEpsilon(self, ei, ej, si, sj, alpha):
 		"""Returns epsilon(i,j).
 
 		:param ei: (float) Well depth of atom i.
 		:param ej: (float) Well depth of atom j.
 		:param si: (float) Collision diameter of atom i.
 		:param sj: (float) Collision diameter of atom j.
+		:param alpha: (float) Parameter for linear combination.
 		:return:
 			epsilon(i, j): (float) Well depth of atoms i and j.
 		"""
@@ -109,24 +115,26 @@ class WaldmanHagler(CR):
 class LorentzBerthelot(CR):
 	"""Implements Lorentz-Berthelot combining rule."""
 
-	def getSigma(self, si, sj):
+	def getSigma(self, si, sj, alpha):
 		"""Returns sigma(i,j).
 
 		:param si: (float) Collision diameter of atom i.
 		:param sj: (float) Collision diameter of atom j.
+		:param alpha: (float) Parameter for linear combination.
 		:return:
 			sigma(i,j): (float) Collision diameter of atoms i and j.
 		"""
 
 		return (si + sj) / 2.0
 
-	def getEpsilon(self, ei, ej, si, sj):
+	def getEpsilon(self, ei, ej, si, sj, alpha):
 		"""Returns epsilon(i,j).
 
 		:param ei: (float) Well depth of atom i.
 		:param ej: (float) Well depth of atom j.
 		:param si: (float) Collision diameter of atom i.
 		:param sj: (float) Collision diameter of atom j.
+		:param alpha: (float) Parameter for linear combination.
 		:return:
 			epsilon(i, j): (float) Well depth of atoms i and j.
 		"""
@@ -137,26 +145,62 @@ class LorentzBerthelot(CR):
 class FenderHalsey(CR):
 	"""Implements Fender-Halsey combining rule."""
 
-	def getSigma(self, si, sj):
+	def getSigma(self, si, sj, alpha):
 		"""Returns sigma(i,j).
 
 		:param si: (float) Collision diameter of atom i.
 		:param sj: (float) Collision diameter of atom j.
+		:param alpha: (float) Parameter for linear combination.
 		:return:
 			sigma(i,j): (float) Collision diameter of atoms i and j.
 		"""
 
 		return (si + sj) / 2
 
-	def getEpsilon(self, ei, ej, si, sj):
+	def getEpsilon(self, ei, ej, si, sj, alpha):
 		"""Returns epsilon(i,j).
 
 		:param ei: (float) Well depth of atom i.
 		:param ej: (float) Well depth of atom j.
 		:param si: (float) Collision diameter of atom i.
 		:param sj: (float) Collision diameter of atom j.
+		:param alpha: (float) Parameter for linear combination.
 		:return:
 			epsilon(i, j): (float) Well depth of atoms i and j.
 		"""
 
 		return (2 * ei * ej) / (ei * ej)
+
+
+class Geometric_LorentzBerthelot_CR(CR):
+	"""Implements linear combination of geometric and LB combining rules."""
+
+	def getSigma(self, si, sj, alpha):
+		"""Returns sigma(i,j).
+
+		:param si: (float) Collision diameter of atom i.
+		:param sj: (float) Collision diameter of atom j.
+		:param alpha: (float) Parameter for linear combination.
+		:return:
+			sigma(i,j): (float) Collision diameter of atoms i and j.
+		"""
+
+		geom = math.sqrt(si * sj)
+		LB = (si + sj) / 2.0
+		return alpha * geom + (1 - alpha) * LB
+
+	def getEpsilon(self, ei, ej, si, sj, alpha):
+		"""Returns epsilon(i,j).
+
+		:param ei: (float) Well depth of atom i.
+		:param ej: (float) Well depth of atom j.
+		:param si: (float) Collision diameter of atom i.
+		:param sj: (float) Collision diameter of atom j.
+		:param alpha: (float) Parameter for linear combination.
+		:return:
+			epsilon(i, j): (float) Well depth of atoms i and j.
+		"""
+
+		geom = math.sqrt(ei * ej)
+		LB = math.sqrt(ei * ej)
+		return alpha * geom + (1 - alpha) * LB

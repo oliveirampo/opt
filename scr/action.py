@@ -16,6 +16,7 @@ import shutil
 import os
 
 import IO
+import iac
 import ana
 import plot
 import optimize
@@ -115,17 +116,24 @@ class Action(ABC):
 		:return:
 			molecules: (collections.OrderedDict) Ordered dictionary of molecules.
 			atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
+			crPrms: (dict) Parameters to do linear combination of combining rules.
 		"""
 
 		IO.readListAtom(conf, molecules, conf.atomListFile)
 		bnd, ang = IO.readRefBondAndAngle(conf.ifpFile)
+
+		vdw = IO.readVdWRadii(conf.vdWFile)
+		iac.add_vdw_radii(atomTypes, vdw)
+
+		crPrms = IO.readPrmCrFile(conf.prmCrFile)
+
 		IO.readListBond(bnd, molecules, conf.bondListFile)
 		IO.readListAngle(ang, molecules, conf.angListFile)
 		IO.readSymmetry(atomTypes, "sig", conf.symSigFile)
 		IO.readSymmetry(atomTypes, "eps", conf.symEpsFile)
 		molecules_utils.createEffectivePrms(atomTypes, molecules, conf.charge_group_type)
 
-		return molecules, atomTypes
+		return molecules, atomTypes, crPrms
 
 	@abstractmethod
 	def run(self, conf, molecules, atomTypes):
@@ -172,13 +180,13 @@ class Gen(Action):
 		The number of files for each type is determined by the variable nJobs in the conf.
 		"""
 
-		molecules, atomTypes = Action.read_extra_inp_files(conf, molecules, atomTypes)
+		molecules, atomTypes, crPrms = Action.read_extra_inp_files(conf, molecules, atomTypes)
 
 		kap = conf.kappa
 		lam = conf.lam
 
 		molecules_utils.computeChargeDistribution(conf.charge_distribution_method, molecules, atomTypes, kap, lam)
-		molecules_utils.computeCR(conf.cr, conf.scl_sig_NEI, conf.scl_eps_NEI, molecules, atomTypes, conf.matrix)
+		molecules_utils.computeCR(conf.cr, crPrms, conf.scl_sig_NEI, conf.scl_eps_NEI, molecules, atomTypes, conf.matrix)
 
 		writeOutFiles.writeParamMod(self.it, molecules)
 

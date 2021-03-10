@@ -88,7 +88,7 @@ def createEffectiveParameterFactory(typ, idx, type_c, type_14, iac1, iac2, typAt
 		def cur(self, value):
 			self._cur = value
 
-		def computeCR(self, cr, scl_sig_NEI, scl_eps_NEI, atomTypes, matrix):
+		def computeCR(self, cr, crPrms, scl_sig_NEI, scl_eps_NEI, atomTypes, matrix):
 			"""No combining rule for Charge object."""
 			pass
 
@@ -112,7 +112,7 @@ def createEffectiveParameterFactory(typ, idx, type_c, type_14, iac1, iac2, typAt
 
 		Methods:
 		--------
-			computeCR(cr, atomTypes, matrix):
+			computeCR(cr, crPrms, atomTypes, matrix):
 				Computes combining rule.
 			writePrm(out):
 				Writes parameter values to txt file.
@@ -193,10 +193,11 @@ def createEffectiveParameterFactory(typ, idx, type_c, type_14, iac1, iac2, typAt
 		def nam(self):
 			return self._nam
 
-		def computeCR(self, cr, scl_sig_NEI, scl_eps_NEI, atomTypes, matrix):
+		def computeCR(self, cr, crPrms, scl_sig_NEI, scl_eps_NEI, atomTypes, matrix):
 			"""Computes combining rule.
 
 			:param cr: (CR) Combining rule.
+			:param crPrms: (dict) Parameters for linear combination of combining rules.
 			:param scl_sig_NEI: (float) Scaling factor for 1-4 sigma.
 			:param scl_eps_NEI: (float) Scaling factor for 1-4 epsilon.
 			:param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
@@ -207,7 +208,7 @@ def createEffectiveParameterFactory(typ, idx, type_c, type_14, iac1, iac2, typAt
 			iac2 = atomTypes[self.iac2]
 
 			prm_type = self._type_14  # NRM or NEI
-			c6, c12 = prm_type.computeCR(cr, scl_sig_NEI, scl_eps_NEI, iac1, iac2, matrix)
+			c6, c12 = prm_type.computeCR(cr, crPrms, scl_sig_NEI, scl_eps_NEI, iac1, iac2, matrix)
 
 			val = self._type_c.getVal(c6, c12, '', '')
 			self._cur = val
@@ -244,14 +245,14 @@ class EffectiveParameter(ABC):
 
 	Methods:
 	--------
-		computeCR(cr, atomTypes, matrix):
+		computeCR(cr, crPrms, scl_sig_NEI, scl_eps_NEI, atomTypes, matrix):
 			Computes combining rule.
 		writePrm(out):
 			Writes parameter values to txt file.
 	"""
 
 	@abstractmethod
-	def computeCR(self, cr, scl_sig_NEI, scl_eps_NEI, atomTypes, matrix):
+	def computeCR(self, cr, crPrms, scl_sig_NEI, scl_eps_NEI, atomTypes, matrix):
 		"""Computes combining rule."""
 		pass
 
@@ -283,7 +284,7 @@ class ParameterType(metaclass=ABCMeta):
 		pass
 
 	@abstractmethod
-	def computeCR(self, cr, scl_sig_NEI, scl_eps_NEI, iac1, iac2, matrix):
+	def computeCR(self, cr, crPrms, scl_sig_NEI, scl_eps_NEI, iac1, iac2, matrix):
 		pass
 
 
@@ -317,10 +318,11 @@ class NRM(ParameterType):
 
 		return 'NRM'
 
-	def computeCR(self, cr, scl_sig_NEI, scl_eps_NEI, iac1, iac2, matrix):
+	def computeCR(self, cr, crPrms, scl_sig_NEI, scl_eps_NEI, iac1, iac2, matrix):
 		"""Computes combining rule.
 
 		:param cr: (CR) Combining rule.
+		:param crPrms: (dict) Parameters for linear combination of combining rules.
 		:param scl_sig_NEI: (float) Scaling factor for 1-4 sigma.
 		:param scl_eps_NEI: (float) Scaling factor for 1-4 epsilon.
 		:param iac1: (IAC) Atom type 1.
@@ -333,8 +335,10 @@ class NRM(ParameterType):
 		epsi = iac1.eps.cur
 		epsj = iac2.eps.cur
 
-		sigij_backup = cr.getSigma(sigi, sigj)
-		epsij_backup = cr.getEpsilon(epsi, epsj, sigi, sigj)
+		alpha = crPrms['alpha']['val']
+
+		sigij_backup = cr.getSigma(sigi, sigj, alpha)
+		epsij_backup = cr.getEpsilon(epsi, epsj, sigi, sigj, alpha)
 
 		if iac1.iac in matrix:
 			if iac2.iac in matrix[iac1.iac]:
@@ -346,8 +350,8 @@ class NRM(ParameterType):
 				sigj = iac2.sig_2.cur
 				epsj = iac2.eps_2.cur
 
-		sigij = cr.getSigma(sigi, sigj)
-		epsij = cr.getEpsilon(epsi, epsj, sigi, sigj)
+		sigij = cr.getSigma(sigi, sigj, alpha)
+		epsij = cr.getEpsilon(epsi, epsj, sigi, sigj, alpha)
 
 		sigi_2_rng = iac1.sig_2.rng
 		sigj_2_rng = iac2.sig_2.rng
@@ -410,10 +414,11 @@ class NEI(ParameterType):
 
 		return 'NEI'
 
-	def computeCR(self, cr, scl_sig_NEI, scl_eps_NEI, iac1, iac2, matrix):
+	def computeCR(self, cr, crPrms, scl_sig_NEI, scl_eps_NEI, iac1, iac2, matrix):
 		"""Computes combining rule.
 
 		:param cr: (CR) Combining rule.
+		:param crPrms: (dict) Parameters for linear combination of combining rules.
 		:param scl_sig_NEI: (float) Scaling factor for 1-4 sigma.
 		:param scl_eps_NEI: (float) Scaling factor for 1-4 epsilon.
 		:param iac1: (IAC) Atom type 1.
@@ -438,8 +443,10 @@ class NEI(ParameterType):
 			sigj_nei = iac2.sig_nei
 			epsj_nei = iac2.eps_nei
 
-		sigij = cr.getSigma(sigi_nei, sigj_nei)
-		epsij = cr.getEpsilon(epsi_nei, epsj_nei, sigi_nei, sigj_nei)
+		alpha = crPrms['alpha']['val']
+
+		sigij = cr.getSigma(sigi_nei, sigj_nei, alpha)
+		epsij = cr.getEpsilon(epsi_nei, epsj_nei, sigi_nei, sigj_nei, alpha)
 
 		c6 = 0.0
 		c12 = 0.0
@@ -479,7 +486,7 @@ class C6(ParameterType):
 
 		return 'C06'
 
-	def computeCR(self, cr, scl_sig_NEI, scl_eps_NEI, iac1, iac2, matrix):
+	def computeCR(self, cr, crPrms, scl_sig_NEI, scl_eps_NEI, iac1, iac2, matrix):
 		raise myExceptions.ClassNotImplemented('C12', 'computeCR()')
 
 
@@ -512,5 +519,5 @@ class C12(ParameterType):
 
 		return 'C12'
 
-	def computeCR(self, cr, scl_sig_NEI, scl_eps_NEI, iac1, iac2, matrix):
+	def computeCR(self, cr, crPrms, scl_sig_NEI, scl_eps_NEI, iac1, iac2, matrix):
 		raise myExceptions.ClassNotImplemented('C12', 'computeCR()')

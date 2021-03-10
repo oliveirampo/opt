@@ -135,9 +135,10 @@ class ChargeDistributionMethod(ABC):
             hrd1 = atom_type1.hrd.cur
             eln1 = atom_type1.eln.cur
             sig1 = atom_type1.sig.cur
+            vdw = atom_type1.vdw
 
             hardness[i] = hrd1
-            diameters[i] = sig1
+            diameters[i] = vdw
             electronegativity[i] = eln1
 
             for j in range(i, cg.shape[0]):
@@ -231,8 +232,9 @@ class ChargeDistributionMethod(ABC):
                         coulomb[i, j] = 0.0
 
                     else:
-                        coulomb[i,j] = 1. / distance_matrix[i,j] * math.erf(distance_matrix[i,j] \
-                            / np.sqrt(diameters[i]**2 + diameters[j]**2 ))
+                        coulomb[i,j] = 1.44 * 1. / distance_matrix[i, j] * math.erf(distance_matrix[i,j] \
+                            / np.sqrt(diameters[i]**2 + diameters[j]**2))
+
                     coulomb[j, i] = coulomb[i, j]
 
         # except Warning:
