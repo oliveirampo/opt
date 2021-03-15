@@ -26,7 +26,6 @@ import math
 import sys
 import os
 
-import action
 import myExceptions
 import configuration
 import molecules_utils
@@ -36,7 +35,6 @@ from atom import Atom
 from matrix import Matrix
 from molecule import Molecule
 from property import Dns, Hvp
-
 
 
 def readFile(fileName):
@@ -291,7 +289,8 @@ def readPrm(fileName):
 			eps_2 = float(line[13])
 			rng_eps_2 = float(line[14])
 
-			atomType = IAC(iac, typ, nam, sig, rng_sig, eps, rng_eps, hrd, rng_hrd, eln, rng_eln, sig_2, rng_sig_2, eps_2, rng_eps_2)
+			atomType = IAC(iac, typ, nam, sig, rng_sig, eps, rng_eps, hrd, rng_hrd, eln, rng_eln, sig_2, rng_sig_2,
+						   eps_2, rng_eps_2)
 			atomTypes[iac] = atomType
 
 	return atomTypes
@@ -535,7 +534,7 @@ def readSymmetry(atomTypes, symTyp, fileName):
 	for line in lines:
 		if line[0][0] != '#':
 			iac = int(line[0])
-			typ = line[1]
+			nam = line[1]
 			sym = line[2]
 
 			if not sym.isupper():
@@ -545,8 +544,8 @@ def readSymmetry(atomTypes, symTyp, fileName):
 			if iac not in atomTypes:
 				sys.exit('\n\tIAC = {} not found in prms.dat\n'.format(iac))
 
-			if typ != atomTypes[iac].typ:
-				sys.exit('\n\tWrong typ for IAC={}: {} != {}\n'.format(iac, typ, atomTypes[iac].typ))
+			if nam != atomTypes[iac].nam:
+				sys.exit('\n\tWrong typ for IAC={}: {} != {}\n'.format(iac, nam, atomTypes[iac].typ))
 
 			atomTypes[iac].addSymmetry(symTyp, sym)
 
@@ -597,10 +596,10 @@ def readPrmCrFile(fileName):
 		if line[0][0] != '#':
 			prm = line[0]
 			value = line[1]
-			range = line[2]
+			val_range = line[2]
 
 			value = float(value)
-			range = float(range)
+			val_range = float(val_range)
 
-			crPrms[prm] = {'val': value, 'rng': range}
+			crPrms[prm] = {'val': value, 'rng': val_range}
 	return crPrms

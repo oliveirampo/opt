@@ -53,7 +53,7 @@ def writeSamFile(conf, molecules, samTemplate):
 
     for cod in molecules:
 
-        for i in range(nJobs):
+        for i in range(nJobs + 1):
             outFileName = 'sam_{}/{}_{}.sam'.format(it, cod, i)
 
             # production

@@ -299,10 +299,12 @@ def writeAllSum(mol, allSum):
         if wei == 0.0:
             wei = '*'
             ref = '-'
-            sim = '-'
+            # sim = '-'
+            sim = '{:.1f}'.format(sim)
             dev = '-'
             err = '-'
-            dd = '-'
+            # dd = '-'
+            dd = '{:.1f}'.format(dd)
         else:
             ref = '{:.1f}'.format(ref)
             sim = '{:.1f}'.format(sim)

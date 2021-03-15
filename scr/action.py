@@ -198,17 +198,17 @@ class Gen(Action):
 class Ana(Action):
 	"""Performs analysis of the simulation results."""
 
-	def run(self, conf, molecules, atomType):
+	def run(self, conf, molecules, atomTypes):
 		"""Perform analysis of the simulation results.
 
 		:param conf: (configuration.Conf) Configuration object
 		:param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
-		:param atomType: (collections.OrderedDict) Ordered dictionary of atom types.
+		:param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
 
 		See ana.runAna method for more information.
 		"""
 
-		molecules, atomTypes = Action.read_extra_inp_files(conf, molecules, atomTypes)
+		molecules, atomTypes, crPrms = Action.read_extra_inp_files(conf, molecules, atomTypes)
 
 		anaDir = 'ana_{}'.format(conf.it)
 		if os.path.exists(anaDir):
@@ -233,7 +233,7 @@ class Plot(Action):
 class Sub(Action):
 	"""Submits jobs to run the simulations."""
 	def run(self, conf, molecules, atomTypes):
-		molecules, atomTypes = Action.read_extra_inp_files(conf, molecules, atomTypes)
+		molecules, atomTypes, crPrms = Action.read_extra_inp_files(conf, molecules, atomTypes)
 		writeOutFiles.writeSubScript(conf, molecules)
 
 
@@ -258,8 +258,8 @@ class Opt(Action):
 		See optimize.runOptimization method for more information.
 		"""
 
-		molecules, atomTypes = Action.read_extra_inp_files(conf, molecules, atomTypes)
-		optimize.runOptimization(conf, molecules, atomTypes)
+		molecules, atomTypes, crPrms = Action.read_extra_inp_files(conf, molecules, atomTypes)
+		optimize.runOptimization(conf, crPrms, molecules, atomTypes)
 
 
 class MTB(Action):
@@ -282,7 +282,7 @@ class MTB(Action):
 		:return:
 		"""
 
-		molecules, atomTypes = Action.read_extra_inp_files(conf, molecules, atomTypes)
+		molecules, atomTypes, crPrms = Action.read_extra_inp_files(conf, molecules, atomTypes)
 
 		mtbDir = 'mtb'
 		mtbGROMOSDir = 'mtb_GROMOS'
