@@ -94,7 +94,7 @@ def addSimprop(conf, mol):
         nRow = os.popen('wc ' + outFileName).read().split()[0]
         # if nRow is not correct ignore molecule (set run to 0)
         if nRow not in ['100', '120', '200', '240']:
-            mol.run = 0.0
+            mol.run = False
             return
 
         with open(outFileName, 'r') as f:
@@ -281,7 +281,7 @@ def writeAllSum(mol, allSum):
     pre_sim = mol.pre_sim
     tem_sim = mol.tem_sim
 
-    allSum.write('{:6} {:12} {:3} {:7.3f} {:5.0f} {} '.format(cod, frm, run, pre_sim, tem_sim, '/'))
+    allSum.write('{:6} {:20} {:3} {:7.3f} {:5.0f} {} '.format(cod, frm, run, pre_sim, tem_sim, '/'))
 
     properties = mol.properties
     for prop in properties:

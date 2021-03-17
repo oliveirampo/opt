@@ -174,13 +174,15 @@ class Molecule:
 
 	@CGs.setter
 	def CGs(self, list_of_lists):
-		self._CGs = np.array([np.array(arr) for arr in list_of_lists])
+		self._CGs = np.array([np.array(arr) for arr in list_of_lists], dtype=object)
 
 	@run.setter
 	def run(self, n):
 		n = float(n)
 		if n == 1:
 			self._run = True
+		else:
+			self._run = False
 
 	@connectivity.setter
 	def connectivity(self, matrix):
