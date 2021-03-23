@@ -52,25 +52,26 @@ def runAna(conf, molecules, anaDir):
             open(resFile, 'w') as res, open(newMolFile, 'w') as newMolData,\
             open(rmsdFile, 'w') as rmsdOut:
 
-        for cod in molecules:
-            mol = molecules[cod]
-
-            # add running average of each job
-            addSimprop(conf, mol)
-
-            if mol.run:
-                writeAllFile(mol, allOut)
-
-                writeAllSum(mol, allSum)
-
-                addSens(conf, mol)
-
-                writeResFile(mol, res)
-
-                writeMolData(mol, newMolData)
+        [extractAndWriteData(conf, molecules[cod], allOut, allSum, res, newMolData) for cod in molecules]
 
         df = getExpSimData(molecules)
         writeRmsd(df, rmsdOut)
+
+
+def extractAndWriteData(conf, mol, allOut, allSum, res, newMolData):
+    # add running average of each job
+    addSimprop(conf, mol)
+
+    if mol.run:
+        writeAllFile(mol, allOut)
+
+        writeAllSum(mol, allSum)
+
+        addSens(conf, mol)
+
+        writeResFile(mol, res)
+
+        writeMolData(mol, newMolData)
 
 
 def addSimprop(conf, mol):
@@ -86,40 +87,54 @@ def addSimprop(conf, mol):
 
     properties = {}
     startJob = 1
-    for i in range(startJob, nJobs + 1):
-        outFileName = 'dat_{}/o_{}_{}'.format(it, cod, i)
-        if not os.path.exists(outFileName):
-            raise myExceptions.NoSuchFile(outFileName)
 
-        nRow = os.popen('wc ' + outFileName).read().split()[0]
-        # if nRow is not correct ignore molecule (set run to 0)
-        if nRow not in ['100', '120', '200', '240']:
-            mol.run = False
-            return
+    # for i in range(startJob, nJobs + 1):
+    [addSimData(i, it, nJobs, startJob, properties, cod, mol) for i in range(startJob, nJobs + 1)]
 
-        with open(outFileName, 'r') as f:
-            lines = f.readlines()
+    # for propCode in properties:
+    [addSimRunningAverage(nJobs, startJob, propCode, properties, mol) for propCode in properties]
 
-        lines = [row.strip().split() for row in lines]
 
-        for row in lines:
-            propCode = row[0]
-            tim = row[1]
-            val = row[2]
-            tim = float(tim)
-            val = float(val)
-            if propCode not in properties:
-                properties[propCode] = {'tim': [tim]}
-                for j in range(startJob, nJobs + 1):
-                    properties[propCode][j] = []
-                properties[propCode][i].append(val)
+def addSimData(i, it, nJobs, startJob, properties, cod, mol):
+    outFileName = 'dat_{}/o_{}_{}'.format(it, cod, i)
+    if not os.path.exists(outFileName):
+        # raise myExceptions.NoSuchFile(outFileName)
+        mol.run = False
+        return
 
-            else:
-                properties[propCode]['tim'].append(tim)
-                properties[propCode][i].append(val)
+    nRow = os.popen('wc ' + outFileName).read().split()[0]
+    # if nRow is not correct ignore molecule (set run to 0)
+    if nRow not in ['100', '120', '200', '240']:
+        mol.run = False
+        return
 
-    # do not add instantaneous values
-    for propCode in properties:
+    with open(outFileName, 'r') as f:
+        lines = f.readlines()
+
+    lines = [row.strip().split() for row in lines]
+    # for row in lines:
+    [addSimInstantaneousValues(i, nJobs, startJob, row, properties) for row in lines]
+
+
+def addSimInstantaneousValues(i, nJobs, startJob, row, properties):
+    propCode = row[0]
+    tim = row[1]
+    val = row[2]
+    tim = float(tim)
+    val = float(val)
+    if propCode not in properties:
+        properties[propCode] = {'tim': [tim]}
+        for j in range(startJob, nJobs + 1):
+            properties[propCode][j] = []
+        properties[propCode][i].append(val)
+
+    else:
+        properties[propCode]['tim'].append(tim)
+        properties[propCode][i].append(val)
+
+
+def addSimRunningAverage(nJobs, startJob, propCode, properties, mol):
+    if mol.run:
         tim = np.unique(properties[propCode]['tim'])
 
         traj = np.zeros((tim.shape[0], nJobs + 1), dtype=np.float)
@@ -144,64 +159,72 @@ def addSens(conf, mol):
     nJobs = conf.nJobs
 
     sens = Sensitivity(pd.DataFrame(columns=['typ', 'idx1', 'idx2', 'nam1', 'nam2', 'val']))
-
     sensitivities = {}
     startJob = 1
-    for i in range(startJob, nJobs):
-        outName = 'dat_{}/s_{}_{}'.format(it, cod, i)
 
-        df = pd.read_csv(outName, sep='\s+',
-        names=['propCod', 'tim', 'typ', 'idx1', 'idx2', 'nam1', 'nam2', 'val', 'sens'])
 
-        lastTim = df['tim'].unique()[-1]
-        df = df.loc[df['tim'] == lastTim]
+    [prepareSens(it, i, cod, sensitivities, sens) for i in range(startJob, nJobs)]
 
-        for propCod in df['propCod'].unique():
-            dat = df.loc[df['propCod'] == propCod]
+    [addSensData(startJob, letter, sensitivities, sens) for letter in sensitivities]
 
-            if propCod not in sensitivities:
-                sensitivities[propCod] = {}
-                sensitivities[propCod][i] = dat
-
-                if len(sensitivities) == 1:
-                    # Adds information about parameters to DataFrame.
-                    sens.addPrmInfo(dat['typ'], dat['idx1'], dat['idx2'], dat['nam1'], dat['nam2'], dat['val'])
-
-            else:
-                sensitivities[propCod][i] = dat
-
-    # get avg and maxDev
-    for letter in sensitivities:
-        nRows = sensitivities[letter][startJob].shape[0]
-        nReplicas = len(sensitivities[letter].keys())
-        data = np.zeros(shape=(nRows, nReplicas))
-
-        # save data into nd-array
-        col = 0
-        for job in sensitivities[letter]:
-            dat = sensitivities[letter][job]
-
-            if dat.shape[0] != nRows:
-                sys.exit('ERROR: Wrong number of rows')
-
-            dat = dat.set_index(['typ', 'idx1', 'idx2'])
-            dat = dat['sens'].values
-
-            data[:, col] = dat
-            col += 1
-
-        # get avg
-        avg = np.mean(data, axis=1)
-
-        # get max dev
-        minVal = np.min(data, axis=1)
-        maxVal = np.max(data, axis=1)
-        maxDev = np.abs(minVal - maxVal)
-
-        sens.addDerivative(letter, avg, maxDev)
-
-    # sens.getAllDerivatives('D')
     mol.sens = sens
+
+
+def prepareSens(it, i, cod, sensitivities, sens):
+    outName = 'dat_{}/s_{}_{}'.format(it, cod, i)
+
+    df = pd.read_csv(outName, sep='\s+',
+                     names=['propCod', 'tim', 'typ', 'idx1', 'idx2', 'nam1', 'nam2', 'val', 'sens'])
+
+    lastTim = df['tim'].unique()[-1]
+    df = df.loc[df['tim'] == lastTim]
+
+    [prepareSensHelper(i, propCod, df, sensitivities, sens) for propCod in df['propCod'].unique()]
+
+
+def prepareSensHelper(i, propCod, df, sensitivities, sens):
+    dat = df.loc[df['propCod'] == propCod]
+
+    if propCod not in sensitivities:
+        sensitivities[propCod] = {}
+        sensitivities[propCod][i] = dat
+
+        if len(sensitivities) == 1:
+            # Adds information about parameters to DataFrame.
+            sens.addPrmInfo(dat['typ'], dat['idx1'], dat['idx2'], dat['nam1'], dat['nam2'], dat['val'])
+
+    else:
+        sensitivities[propCod][i] = dat
+
+
+def addSensData(startJob, letter, sensitivities, sens):
+    nRows = sensitivities[letter][startJob].shape[0]
+    nReplicas = len(sensitivities[letter].keys())
+    data = np.zeros(shape=(nRows, nReplicas))
+
+    # save data into nd-array
+    col = 0
+    for job in sensitivities[letter]:
+        dat = sensitivities[letter][job]
+
+        if dat.shape[0] != nRows:
+            sys.exit('ERROR: Wrong number of rows')
+
+        dat = dat.set_index(['typ', 'idx1', 'idx2'])
+        dat = dat['sens'].values
+
+        data[:, col] = dat
+        col += 1
+
+    # get avg
+    avg = np.mean(data, axis=1)
+
+    # get max dev
+    minVal = np.min(data, axis=1)
+    maxVal = np.max(data, axis=1)
+    maxDev = np.abs(minVal - maxVal)
+
+    sens.addDerivative(letter, avg, maxDev)
 
 
 def getErr(prop):

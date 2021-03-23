@@ -16,6 +16,7 @@ Methods:
     updateEffectivePrm(cr, eem, matrix, molecules, atomTypes)
 """
 
+# from datetime import datetime
 from scipy import optimize
 import shutil
 import sys
@@ -39,18 +40,26 @@ def runOptimization(conf, crPrms, molecules, atomTypes):
     - Minimizes parameters.
     """
 
+    # startTime = datetime.now()
+    # print(datetime.now() - startTime)
+    # sys.exit('STOP')
+
+    print("Computing charges")
     charge_method = conf.charge_distribution_method
 
     molecules_utils.computeChargeDistribution(charge_method, molecules, atomTypes, conf.kappa, conf.lam)
 
+    print("Updating effective parameters")
     updateEffectivePrm(conf.cr, crPrms, conf.scl_sig_NEI, conf.scl_eps_NEI, charge_method, conf.kappa, conf.lam,
                        conf.matrix, molecules, atomTypes)
 
     updateOriginalParameterValues(molecules)
 
+    print("Adding simulated results")
     # get simulated results
     addSimProp(conf, molecules)
 
+    print("Selecting parameters to be optimized")
     prmsToOptimize = getParametersToBeOptimized(atomTypes)
 
     # set min/max values and return initial values
@@ -62,6 +71,7 @@ def runOptimization(conf, crPrms, molecules, atomTypes):
         shutil.rmtree(optDir)
     os.makedirs(optDir)
 
+    print("Optimizing")
     optOutFile = conf.optOutFile
     with open(optOutFile, 'w') as optOut:
         minimize(conf, crPrms, init, prmsToOptimize, atomTypes, molecules, optOut)
@@ -97,14 +107,16 @@ def addSimProp(conf, molecules):
     :param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
     """
 
-    for cod in molecules:
-        mol = molecules[cod]
+    molecules = [addSimPropHelper(conf, molecules[cod]) for _, cod in enumerate(molecules)]
+    return molecules
 
-        # add running average of each job
-        ana.addSimprop(conf, mol)
 
-        # add sensitivity matrix
-        ana.addSens(conf, mol)
+def addSimPropHelper(conf, mol):
+    # add running average of each job
+    ana.addSimprop(conf, mol)
+
+    # add sensitivity matrix
+    ana.addSens(conf, mol)
 
 
 def getParametersToBeOptimized(atomTypes):
@@ -280,50 +292,57 @@ def targetFunction(init, prmsToOptimize, atomTypes, cr, crPrms, scl_sig_NEI, scl
     updatePrm(init, prmsToOptimize)
     updateEffectivePrm(cr, crPrms, scl_sig_NEI, scl_eps_NEI, eem, kappa, lam, matrix, molecules, atomTypes)
 
-    x_fnc = 0.0
-    x_sum = 0.0
+    x_fnc = [0.0]
+    x_sum = [0.0]
 
-    for cod in molecules:
-        mol = molecules[cod]
+    [getX(x_fnc, x_sum, molecules[mol]) for mol in molecules]
 
-        run = mol.run
-        if run:
-
-            sens = mol.sens
-            props = mol.properties
-            parameters = mol.parameters
-
-            for prop in props:
-                ref = prop.ref
-                wei = prop.wei
-                sim = prop.sim
-                propCode = prop.code
-                propScale = prop.scale
-
-                linearApproximationX = sim
-
-                for prm in parameters:
-                    ori = prm.ori
-                    cur = prm.cur
-                    prmName = prm.nam
-
-                    derivative = sens.getDerivative(prmName, propCode)
-                    linearApproximationX += derivative * (cur - ori)
-
-                term = abs(linearApproximationX - ref)
-                term *= wei / propScale
-
-                x_fnc += term
-                x_sum += wei
-
-    x_fnc = x_fnc / x_sum
+    x_fnc = x_fnc[0] / x_sum[0]
 
     if info['Nfeval'] % 10 == 0:
         optOut.write('{0:4d} {1: 3.6f}\n'.format(info['Nfeval'], x_fnc))
-        # print(info['Nfeval'], x_fnc)
+        print(info['Nfeval'], x_fnc)
 
     info['Nfeval'] += 1
     return x_fnc
+
+
+def getX(x_fnc, x_sum, mol):
+    if mol.run:
+        sens = mol.sens
+        props = mol.properties
+        parameters = mol.parameters
+
+        # for prop in props:
+        [getLinearApproximation(prop, sens, parameters, x_fnc, x_sum) for prop in props]
+
+
+def getLinearApproximation(prop, sens, parameters, x_fnc, x_sum):
+    ref = prop.ref
+    wei = prop.wei
+    sim = prop.sim
+    propCode = prop.code
+    propScale = prop.scale
+
+    linearApproximationX = [sim]
+
+    # for prm in parameters:
+    [addDerivative(prm, propCode, sens, linearApproximationX) for prm in parameters]
+
+    term = abs(linearApproximationX[0] - ref)
+    term *= wei / propScale
+
+    x_fnc[0] += term
+    x_sum[0] += wei
+
+
+def addDerivative(prm, propCode, sens, linearApproximationX):
+    ori = prm.ori
+    cur = prm.cur
+    prmName = prm.nam
+
+    derivative = sens.getDerivative(prmName, propCode)
+    linearApproximationX[0] += derivative * (cur - ori)
 
 
 def updatePrm(init, prmsToOptimize):

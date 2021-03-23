@@ -1,3 +1,4 @@
+from datetime import datetime
 import traceback
 import sys
 
@@ -19,11 +20,16 @@ def main():
 	"""
 
 	try:
+		startTime = datetime.now()
+
 		action = inpParser.parse()
 		conf = Conf('00_inp/Conf.dat', action.it)
 
 		molecules, atomTypes = action.read_inp_files(conf)
 		action.run(conf, molecules, atomTypes)
+
+		print(datetime.now() - startTime)
+
 
 	except NotImplementedError as err:
 		print(err)
