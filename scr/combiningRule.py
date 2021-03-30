@@ -109,6 +109,9 @@ class WaldmanHagler(CR):
 			epsilon(i, j): (float) Well depth of atoms i and j.
 		"""
 
+		if (si**6) + (sj**6) == 0.0:
+			return 0.0
+
 		return 2.0 * math.sqrt(ei*ej) * (si**3) * (sj**3) / ((si**6) + (sj**6))
 
 
@@ -168,6 +171,9 @@ class FenderHalsey(CR):
 		:return:
 			epsilon(i, j): (float) Well depth of atoms i and j.
 		"""
+
+		if (ei * ej) == 0.0:
+			return 0.0
 
 		return (2 * ei * ej) / (ei * ej)
 
