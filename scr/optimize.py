@@ -266,6 +266,9 @@ def minimize(conf, crPrms, init, prmsToOptimize, atomTypes, molecules, optOut):
 
     writePrm(atomTypes, outPrmFile)
 
+    fileName = '00_inp/prm_cr_{}.dat'.format(conf.it + 1)
+    write_cr_prm(crPrms, fileName)
+
 
 def targetFunction(init, prmsToOptimize, atomTypes, cr, crPrms, scl_sig_NEI, scl_eps_NEI, eem, kappa, lam, matrix,
                    molecules, info, optOut):
@@ -423,3 +426,11 @@ def writePrm(atomTypes, fileName):
                       '{11:13.6E} {12:5.2f} {13:13.6E} {14:5.2f}\n'
                       .format(iac, typ, nam, sig, sig_rng, eps, eps_rng, hrd, hrd_rng, eln, eln_rng, sig_2, sig_rng_2,
                               eps_2, eps_rng_2))
+
+
+def write_cr_prm(crPrms, fileName):
+    with open(fileName, 'w') as out:
+        out.write('{:6} {:4} {:4}\n'.format("#name", "val", "rng"))
+
+        for key, val in crPrms.items():
+            out.write('{:5} {:4} {:4}\n'.format(key, val['val'], val['rng']))
