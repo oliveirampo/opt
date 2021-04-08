@@ -30,6 +30,7 @@ class Molecule:
 		_properties: (list) List of properties.
 		_mlp_ref: (float) Melting point.
 		_blp_ref: (float) Boiling point.
+		_tem_cri: (float) Critical temperature.
 		_eps_ref: (float) Permittivity.
 
 		_atoms = {}
@@ -62,7 +63,7 @@ class Molecule:
 		getNumProps()
 	"""
 
-	def __init__(self, cod, frm, run, pre_sim, tem_sim, properties, mlp_ref, blp_ref, eps_ref):
+	def __init__(self, cod, frm, run, pre_sim, tem_sim, properties, mlp_ref, blp_ref, tem_cri, eps_ref):
 		"""Constructs all the necessary attributes for the molecule.
 
 		:param cod: (str) Code.
@@ -73,6 +74,7 @@ class Molecule:
 		:param properties: (list) List of properties.
 		:param mlp_ref: (float) Melting point.
 		:param blp_ref: (float) Boiling point.
+		:param tem_cri: (float) Critical temperature.
 		:param eps_ref: (float) Permittivity.
 		"""
 
@@ -91,6 +93,7 @@ class Molecule:
 
 		self._mlp_ref = float(mlp_ref)
 		self._blp_ref = float(blp_ref)
+		self._tem_cri = float(tem_cri)
 		self._eps_ref = float(eps_ref)
 
 		self._atoms = {}
@@ -135,6 +138,10 @@ class Molecule:
 	@property
 	def blp_ref(self):
 		return self._blp_ref
+
+	@property
+	def tem_cri(self):
+		return self._tem_cri
 
 	@property
 	def eps_ref(self):

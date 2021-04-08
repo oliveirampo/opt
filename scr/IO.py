@@ -244,13 +244,14 @@ def readMolData(conf):
 				hvp_ref = float(line[8])
 				mlp_ref = line[9]
 				blp_ref = line[10]
-				eps_ref = line[11]
+				tem_cri = line[11]
+				eps_ref = line[12]
 
 				dns = Dns(scl_dns, dns_wei, dns_ref)
 				hvp = Hvp(scl_hvp, hvp_wei, hvp_ref)
 				properties = [dns, hvp]
 
-				mol = Molecule(cod, frm, run, pre_sim, tem_sim, properties, mlp_ref, blp_ref, eps_ref)
+				mol = Molecule(cod, frm, run, pre_sim, tem_sim, properties, mlp_ref, blp_ref, tem_cri, eps_ref)
 				molecules[cod] = mol
 
 	return molecules
