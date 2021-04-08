@@ -367,6 +367,7 @@ def writeMolData(mol, out):
     tem_sim = mol.tem_sim
     mlp_ref = mol.mlp_ref
     blp_ref = mol.blp_ref
+    tem_cri = mol.tem_cri
     eps_ref = mol.eps_ref
 
     s = ''
@@ -394,7 +395,7 @@ def writeMolData(mol, out):
     out.write('{:8} {:10} {:2} {:6} {:7}'
     .format(cod, frm, run, pre_sim, tem_sim))
     out.write(s)
-    out.write('{:7} {:7} {:6}\n'.format(mlp_ref, blp_ref, eps_ref))
+    out.write('{:7} {:7} {:6}\n'.format(mlp_ref, blp_ref, tem_cri, eps_ref))
 
 
 def getExpSimData(molecules):
