@@ -30,7 +30,6 @@ def main():
 
 		print(datetime.now() - startTime)
 
-
 	except NotImplementedError as err:
 		print(err)
 

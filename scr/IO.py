@@ -156,6 +156,7 @@ def readConf(conf, fileName):
 		conf.plotConf = plotConf
 
 	except KeyError:
+		conf.plotConf = plotConf
 		pass
 
 

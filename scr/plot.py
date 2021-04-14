@@ -41,10 +41,10 @@ def run(conf):
 
     data = getData(it, plotConf)
 
-    plot_data(plotConf, data)
+    # plot_data(plotConf, data)
 
     # plot_target_function(it, plotConf)
-    # plot_prm(it, plotConf)
+    plot_prm(it, plotConf)
 
 
 def getData(it, plotConf):
@@ -73,6 +73,14 @@ def getData(it, plotConf):
     map_cod_family = plotConf.map_cod_family
     map_cod_color = plotConf.map_cod_color
     map_cod_marker = plotConf.map_cod_marker
+
+    if len(map_cod_family) == 0:
+        sys.exit('\n\tERROR: No map of code to family.\n')
+    if len(map_cod_color) == 0:
+        sys.exit('\n\tERROR: No map of code to color.\n')
+    if len(map_cod_marker) == 0:
+        sys.exit('\n\tERROR: No map of code to marker.\n')
+
     data = data.apply(addExtraInfo, args=(map_cod_family, map_cod_color, map_cod_marker,), axis=1)
 
     return data
@@ -328,7 +336,7 @@ def plot_prm(it, plotConf):
             raise myExceptions.NoSuchFile(prmFile)
 
         d = pd.read_csv(prmFile, sep='\s+', comment='#',
-                        names=['iac', 'name', 'sig', 'rng_sig', 'eps', 'rng_eps', 'hrd', 'rng_hrd', 'eln', 'rng_eln',
+                        names=['iac', 'typ', 'name', 'sig', 'rng_sig', 'eps', 'rng_eps', 'hrd', 'rng_hrd', 'eln', 'rng_eln',
                                'sig_2', 'rng_sig_2', 'eps_2', 'rng_eps_2'],
                         usecols=['iac', 'name', 'sig', 'eps', 'hrd', 'eln'])
 
@@ -353,8 +361,8 @@ def plot_prm_NB(data, plotConf, plotDir):
     plt.rcParams['mathtext.fontset'] = 'cm'
     color = getColors()
 
-    prmIni = 2
-    prmFin = 4
+    prmIni = 0
+    prmFin = 2
     nPrms = prmFin - prmIni
     prmTypes = ['sig', 'eps', 'hrd', 'eln', 'eln']
     prmNames = [r'$\sigma \,$ [nm]', r'$\epsilon \,$ [kJ $\cdot$ mol$^{-1}$]', r'$\eta \,$ [$e^{-1} \cdot$ V]',
@@ -424,9 +432,9 @@ def plot_prm_NB(data, plotConf, plotDir):
         plt.subplots_adjust(wspace=0.25)
         axes[nPrms - 1].legend(loc='upper right', fontsize=12, bbox_to_anchor=(1.50, 1.01), frameon=False)
         fig.subplots_adjust(left=0.0825, right=0.835)
-        axes[0].set_ylim([0, 45])
-        axes[1].set_ylim([0, 55])
-        axes[1].set_yticks(np.arange(0, 56, 5))
+        # axes[0].set_ylim([0, 1])
+        # axes[1].set_ylim([0, 1])
+        # axes[1].set_yticks(np.arange(0, 56, 5))
 
         # OXY + HB LJ
         # plt.subplots_adjust(wspace=0.25)
