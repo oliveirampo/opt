@@ -350,7 +350,7 @@ class Conf:
         if isinstance(method, ChargeDistribution.BondChargeDistributionMethod):
             if not isinstance(self._charge_group_type, ChargeDistribution.Atomic):
                 print(
-                    'This charge distribution method ({}) is only compatible with ({}) charge group.\n'
+                    'This charge distribution method ({}) is not compatible with ({}) charge group.\n'
                     'Try ({}) charge group, for instance.'.format(type(method), type(self._charge_group_type),
                                                                   type(ChargeDistribution.Atomic())))
 

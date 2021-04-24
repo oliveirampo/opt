@@ -19,6 +19,7 @@ Methods:
 # from datetime import datetime
 from scipy import optimize
 import shutil
+import math
 import sys
 import os
 
@@ -39,10 +40,6 @@ def runOptimization(conf, crPrms, molecules, atomTypes):
     - Extracts ensemble averages ans sensitivities from simulation results.
     - Minimizes parameters.
     """
-
-    # startTime = datetime.now()
-    # print(datetime.now() - startTime)
-    # sys.exit('STOP')
 
     print("Computing charges")
     charge_method = conf.charge_distribution_method
@@ -257,11 +254,11 @@ def minimize(conf, crPrms, init, prmsToOptimize, atomTypes, molecules, optOut):
     # x_fnc = targetFunction(init, prmsToOptimize, atomTypes, cr, , scl_sig_NEI, scl_eps_NEI eem, matrix, molecules,
     # {'Nfeval':0})
     ret = optimize.minimize(targetFunction, init, args=minimizer_kwargs, options=option, method='Nelder-Mead')
-    print(ret)
+    # print(ret)
 
     outPrmFile = conf.outPrmFile
 
-    updatePrm(ret.x, prmsToOptimize)
+    updatePrm(ret.x, prmsToOptimize, atomTypes, cr, crPrms)
     updateEffectivePrm(cr, crPrms, scl_sig_NEI, scl_eps_NEI, eem, kappa, lam, matrix, molecules, atomTypes)
 
     writePrm(atomTypes, outPrmFile)
@@ -292,7 +289,7 @@ def targetFunction(init, prmsToOptimize, atomTypes, cr, crPrms, scl_sig_NEI, scl
         x_fnc: (float) Value of target function.
     """
 
-    updatePrm(init, prmsToOptimize)
+    updatePrm(init, prmsToOptimize, atomTypes, cr, crPrms)
     updateEffectivePrm(cr, crPrms, scl_sig_NEI, scl_eps_NEI, eem, kappa, lam, matrix, molecules, atomTypes)
 
     x_fnc = [0.0]
@@ -348,11 +345,14 @@ def addDerivative(prm, propCode, sens, linearApproximationX):
     linearApproximationX[0] += derivative * (cur - ori)
 
 
-def updatePrm(init, prmsToOptimize):
+def updatePrm(init, prmsToOptimize, atomTypes, cr, crPrms):
     """Updates parameter values, and adjusts current value to [min, max].
 
     :param init: (list) List with initial guess of parameter values.
     :param prmsToOptimize: (list) List of parameters to be optimized.
+    :param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
+    :param cr: (combiningRule) Combining rule.
+    :param crPrms: (dict) Parameters to do linear combination of combining rules.
     """
 
     for i in range(len(prmsToOptimize)):
@@ -368,6 +368,65 @@ def updatePrm(init, prmsToOptimize):
             elif newVal > prm.max:
                 prm.cur = newVal
                 init[i] = prm.max
+
+    updateIAC(atomTypes, crPrms, cr)
+
+
+def updateIAC(atomTypes, crPrms, cr):
+    """Update sig-II/eps-II values.
+
+    :param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
+    :param cr: (combiningRule) Combining rule.
+    :param crPrms: (dict) Parameters to do linear combination of combining rules.
+    """
+
+    alpha = crPrms['alpha']['val']
+
+    # update sig_2 and eps_2 values
+    for iac in atomTypes:
+        atmTyp = atomTypes[iac]
+
+        sig = atmTyp.sig
+        eps = atmTyp.eps
+        sig_2 = atmTyp.sig_2
+        eps_2 = atmTyp.eps_2
+
+        sigi_1 = sig.cur
+        sigj_1 = sig.cur
+        epsi_1 = eps.cur
+        epsj_1 = eps.cur
+
+        sigi_2 = sig_2.cur
+        sigj_2 = sig_2.cur
+        epsi_2 = eps_2.cur
+        epsj_2 = eps_2.cur
+
+        # do not update
+        if sig_2.rng == 0.0 and eps_2.rng == 0.0:
+            continue
+
+        # update eps_2
+        elif sig_2.rng == 0.0:
+            sigij_1 = cr.getSigma(sigi_1, sigj_1, alpha)
+            epsij_1 = cr.getEpsilon(epsi_1, epsj_1, sigi_1, sigj_1, alpha)
+            epsij_2 = cr.getEpsilon(epsi_2, epsj_2, sigi_2, sigj_2, alpha)
+
+            c6 = 4.0 * epsij_1 * math.exp(6.0 * math.log(sigij_1))
+
+            sigij_2 = math.exp((1.0 / 6.0) * math.log(c6 / (4 * epsij_2)))
+
+            atmTyp.sig_2.cur = sigij_2
+
+        # update sig_2
+        elif epsi_2.rng == 0.0:
+            sigij_1 = cr.getSigma(sigi_1, sigj_1, alpha)
+            epsij_1 = cr.getEpsilon(epsi_1, epsj_1, sigi_1, sigj_1, alpha)
+            sigij_2 = cr.getSigma(sigi_2, sigj_2, alpha)
+
+            c6 = 4.0 * epsij_1 * math.exp(6.0 * math.log(sigij_1))
+            epsij_2 = c6 / (4 * math.exp(6 * math.log(sigij_2)))
+
+            atmTyp.eps_2.cur = epsij_2
 
 
 def updateEffectivePrm(cr, crPrms, scl_sig_NEI, scl_eps_NEI, eem, kappa, lam, matrix, molecules, atomTypes):

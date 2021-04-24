@@ -17,6 +17,7 @@ Methods:
 
 from abc import ABC, ABCMeta, abstractmethod
 import math
+import sys
 
 import myExceptions
 
@@ -330,54 +331,67 @@ class NRM(ParameterType):
 		:param matrix: (Matrix) Matrix with usage of C12(II) parameters.
 		"""
 
+		alpha = crPrms['alpha']['val']
+
 		sigi = iac1.sig.cur
 		sigj = iac2.sig.cur
 		epsi = iac1.eps.cur
 		epsj = iac2.eps.cur
 
-		alpha = crPrms['alpha']['val']
+		sigi_2 = sigi
+		sigj_2 = sigj
+		epsi_2 = epsi
+		epsj_2 = epsj
 
-		sigij_backup = cr.getSigma(sigi, sigj, alpha)
-		epsij_backup = cr.getEpsilon(epsi, epsj, sigi, sigj, alpha)
-
+		use_sig_eps_2 = False
 		if iac1.iac in matrix:
 			if iac2.iac in matrix[iac1.iac]:
-				sigi = iac1.sig_2.cur
-				epsi = iac1.eps_2.cur
+				sigi_2 = iac1.sig_2.cur
+				epsi_2 = iac1.eps_2.cur
+				use_sig_eps_2 = True
 
 		if iac2.iac in matrix:
 			if iac1.iac in matrix[iac2.iac]:
-				sigj = iac2.sig_2.cur
-				epsj = iac2.eps_2.cur
-
-		sigij = cr.getSigma(sigi, sigj, alpha)
-		epsij = cr.getEpsilon(epsi, epsj, sigi, sigj, alpha)
+				sigj_2 = iac2.sig_2.cur
+				epsj_2 = iac2.eps_2.cur
+				use_sig_eps_2 = True
 
 		sigi_2_rng = iac1.sig_2.rng
 		sigj_2_rng = iac2.sig_2.rng
 		epsi_2_rng = iac1.eps_2.rng
 		epsj_2_rng = iac2.eps_2.rng
-		# In case sig_2 OR eps_2 is optimized,
-		# make sure that the use of sig_2 and eps_2 leads to the same C6 value as the use of sig and eps.
-		if (epsi_2_rng != 0) or (epsj_2_rng != 0):
-			if epsij != 0.0:
-				c6 = 4.0 * epsij_backup * math.exp(6.0 * math.log(sigij_backup))
-				sigij = math.exp((1.0 / 6.0) * math.log(c6 / (4 * epsij)))
 
-				if iac1.iac == iac2.iac:
-					iac1.sig_2.cur = sigij
+		if use_sig_eps_2:
+			sigij = cr.getSigma(sigi, sigj, alpha)
+			epsij = cr.getEpsilon(epsi, epsj, sigi, sigj, alpha)
 
-		elif (sigi_2_rng != 0) or (sigj_2_rng != 0):
-			if sigij != 0.0:
-				c6 = 4.0 * epsij_backup * math.exp(6.0 * math.log(sigij_backup))
-				epsij = c6 / (4 * math.exp(6 * math.log(sigij)))
+			if (epsi_2_rng != 0) or (epsj_2_rng != 0):
+				epsij_2 = cr.getEpsilon(epsi_2, epsj_2, sigi_2, sigj_2, alpha)
 
-				if iac1.iac == iac2.iac:
-					iac1.eps_2.cur = epsij
+				c6 = 4.0 * epsij * math.exp(6.0*math.log(sigij))
 
-		c6 = 0.0
-		c12 = 0.0
-		if sigij != 0.0:
+				sigij = math.exp((1.0 / 6.0) * math.log(c6 / (4 * epsij_2)))
+				epsij = epsij_2
+
+			elif (sigi_2_rng != 0) or (sigj_2_rng != 0):
+				sigij_2 = cr.getSigma(sigi_2, sigj_2, alpha)
+
+				c6 = 4.0 * epsij * math.exp(6.0*math.log(sigij))
+
+				sigij = sigij_2
+				epsij = c6 / (4 * math.exp(6 * math.log(sigij_2)))
+
+			else:
+				sys.exit('computeCR()::TODO')
+
+		else:
+			sigij = cr.getSigma(sigi, sigj, alpha)
+			epsij = cr.getEpsilon(epsi, epsj, sigi, sigj, alpha)
+
+		if sigij == 0.0:
+			c6 = 0.0
+			c12 = 0.0
+		else:
 			c6 = 4.0 * epsij * math.exp(6.0 * math.log(sigij))
 			c12 = 4.0 * epsij * math.exp(12.0 * math.log(sigij))
 

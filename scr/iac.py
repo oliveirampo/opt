@@ -140,8 +140,10 @@ class IAC:
 
 		if symTyp == 'sig':
 			self._sig.symmetry = sym
+			self._sig_2.symmetry = sym
 		elif symTyp == 'eps':
 			self._eps.symmetry = sym
+			self._eps_2.symmetry = sym
 		else:
 			print('Symmetry type not implemented: {}'.format(symTyp))
 			sys.exit(1)
