@@ -52,7 +52,8 @@ def runAna(conf, molecules, anaDir):
             open(resFile, 'w') as res, open(newMolFile, 'w') as newMolData,\
             open(rmsdFile, 'w') as rmsdOut:
 
-        [extractAndWriteData(conf, molecules[cod], allOut, allSum, res, newMolData) for cod in molecules]
+        for cod in molecules:
+            extractAndWriteData(conf, molecules[cod], allOut, allSum, res, newMolData)
 
         df = getExpSimData(molecules)
         writeRmsd(df, rmsdOut)
@@ -63,6 +64,7 @@ def extractAndWriteData(conf, mol, allOut, allSum, res, newMolData):
     addSimprop(conf, mol)
 
     if mol.run:
+        print(mol.cod)
         writeAllFile(mol, allOut)
 
         writeAllSum(mol, allSum)
@@ -88,11 +90,11 @@ def addSimprop(conf, mol):
     properties = {}
     startJob = 1
 
-    # for i in range(startJob, nJobs + 1):
-    [addSimData(i, it, nJobs, startJob, properties, cod, mol) for i in range(startJob, nJobs + 1)]
+    for i in range(startJob, nJobs + 1):
+        addSimData(i, it, nJobs, startJob, properties, cod, mol)
 
-    # for propCode in properties:
-    [addSimRunningAverage(nJobs, startJob, propCode, properties, mol) for propCode in properties]
+    for propCode in properties:
+        addSimRunningAverage(nJobs, startJob, propCode, properties, mol)
 
 
 def addSimData(i, it, nJobs, startJob, properties, cod, mol):
@@ -112,8 +114,8 @@ def addSimData(i, it, nJobs, startJob, properties, cod, mol):
         lines = f.readlines()
 
     lines = [row.strip().split() for row in lines]
-    # for row in lines:
-    [addSimInstantaneousValues(i, nJobs, startJob, row, properties) for row in lines]
+    for row in lines:
+        addSimInstantaneousValues(i, nJobs, startJob, row, properties)
 
 
 def addSimInstantaneousValues(i, nJobs, startJob, row, properties):
@@ -162,10 +164,11 @@ def addSens(conf, mol):
     sensitivities = {}
     startJob = 1
 
+    for i in range(startJob, nJobs):
+        prepareSens(it, i, cod, sensitivities, sens)
 
-    [prepareSens(it, i, cod, sensitivities, sens) for i in range(startJob, nJobs)]
-
-    [addSensData(startJob, letter, sensitivities, sens) for letter in sensitivities]
+    for letter in sensitivities:
+        addSensData(startJob, letter, sensitivities, sens)
 
     mol.sens = sens
 
@@ -179,7 +182,8 @@ def prepareSens(it, i, cod, sensitivities, sens):
     lastTim = df['tim'].unique()[-1]
     df = df.loc[df['tim'] == lastTim]
 
-    [prepareSensHelper(i, propCod, df, sensitivities, sens) for propCod in df['propCod'].unique()]
+    for propCod in df['propCod'].unique():
+        prepareSensHelper(i, propCod, df, sensitivities, sens)
 
 
 def prepareSensHelper(i, propCod, df, sensitivities, sens):
@@ -395,7 +399,7 @@ def writeMolData(mol, out):
     out.write('{:8} {:10} {:2} {:6} {:7}'
     .format(cod, frm, run, pre_sim, tem_sim))
     out.write(s)
-    out.write('{:7} {:7} {:6}\n'.format(mlp_ref, blp_ref, tem_cri, eps_ref))
+    out.write('{:7} {:7} {:6} {:6}\n'.format(mlp_ref, blp_ref, tem_cri, eps_ref))
 
 
 def getExpSimData(molecules):
@@ -471,14 +475,14 @@ def writeRmsd(df, out):
             nData = dat.shape[0]
 
             if nData == 0:
-                # print('{:4} {:>6} {:>6} {:>6} {:>7}'.format(nData, '-', '-', '-', '-', '-'), end=' ')
-                out.write('{:4} {:>6} {:>6} {:>6} {:>7}'.format(nData, '-', '-', '-', '-', '-'))
+                # print('{:6} {:>6} {:>6} {:>6} {:>7}'.format(nData, '-', '-', '-', '-', '-'), end=' ')
+                out.write('{:6} {:>6} {:>6} {:>6} {:>7}'.format(nData, '-', '-', '-', '-', '-'))
 
             else:
-                prop_avg, rmsd, aved, mean_err = getRmsd(letter, dat)
+                prop_avg, rmsd, aved, mad = getRmsd(letter, dat)
 
-                # print('{:4} {:6.1f} {:6.1f} {:6.1f} {:7.1f}'.format(nData, rmsd, aved, mean_err, prop_avg), end=' ')
-                out.write('{:4} {:6.1f} {:6.1f} {:6.1f} {:7.1f}'.format(nData, rmsd, aved, mean_err, prop_avg))
+                # print('{:6} {:6.1f} {:6.1f} {:6.1f} {:7.1f}'.format(nData, rmsd, aved, mad, prop_avg), end=' ')
+                out.write('{:6} {:6.1f} {:6.1f} {:6.1f} {:7.1f}'.format(nData, rmsd, aved, mad, prop_avg))
 
         # print('')
         out.write('\n')
@@ -492,10 +496,10 @@ def writeRmsd(df, out):
     for letter in propLetters:
         dat = df.dropna(subset=['ref_{}'.format(letter)])
         nData = dat.shape[0]
-        prop_avg, rmsd, aved, mean_err = getRmsd(letter, dat)
+        prop_avg, rmsd, aved, mad = getRmsd(letter, dat)
 
-        # print('{:4} {:6.1f} {:6.1f} {:6.1f} {:7.1f}'.format(nData, rmsd, aved, mean_err, prop_avg), end=' ')
-        out.write('{:4} {:6.1f} {:6.1f} {:6.1f} {:7.1f}'.format(nData, rmsd, aved, mean_err, prop_avg))
+        # print('{:6} {:6.1f} {:6.1f} {:6.1f} {:7.1f}'.format(nData, rmsd, aved, mad, prop_avg), end=' ')
+        out.write('{:6} {:6.1f} {:6.1f} {:6.1f} {:7.1f}'.format(nData, rmsd, aved, mad, prop_avg))
     # print('')
     out.write('\n')
 
@@ -511,9 +515,10 @@ def getRmsd(prop, df):
     prop_avg = np.mean(df[['ref_{}'.format(prop)]]).values[0]
     rmsd = np.sqrt(np.mean(df[['diff2_{}'.format(prop)]], axis=0)).values[0]
     aved = np.mean(df[['diff_{}'.format(prop)]], axis=0).values[0]
-    mean_err = np.mean(df[['err_{}'.format(prop)]], axis=0).values[0]
+    mad = np.mean(df[['diff_{}'.format(prop)]].abs(), axis=0).values[0]
+    # mean_err = np.mean(df[['err_{}'.format(prop)]], axis=0).values[0]
 
-    return prop_avg, rmsd, aved, mean_err
+    return prop_avg, rmsd, aved, mad
 
 
 def getNumberOfMolecules(df):

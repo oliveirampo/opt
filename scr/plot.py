@@ -41,10 +41,10 @@ def run(conf):
 
     data = getData(it, plotConf)
 
-    # plot_data(plotConf, data)
+    plot_data(plotConf, data)
 
     # plot_target_function(it, plotConf)
-    plot_prm(it, plotConf)
+    # plot_prm(it, plotConf)
 
 
 def getData(it, plotConf):
@@ -213,6 +213,12 @@ def plot_exp_vs_sim(df, plotSettings, prop_code, name, plotDir):
     elif prop_code == 'hvp':
         ax.text(-0.175, 0.975, '(b)', transform=ax.transAxes, size=14)
         # ax.text(-0.175, 0.975, '(d)', transform=ax.transAxes, size=14)
+
+    propLabel = plotSettings[prop_code + '_label'].replace('__', ' ')
+    propUnit = plotSettings[prop_code + '_unit'].replace('__', ' ')
+    ax.set_ylabel('{} {}'.format(propLabel, propUnit), fontsize=18)
+    propLabel = propLabel.replace('sim', 'exp')
+    ax.set_xlabel('{} {}'.format(propLabel, propUnit), fontsize=18)
 
     plt.tight_layout()
 
