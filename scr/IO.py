@@ -501,20 +501,20 @@ def readListAngle(ang, molecules, fileName):
 				atm2 = mol.getAtom(idx2)
 				atm3 = mol.getAtom(idx3)
 
-				if (atm1.ignore is False) and (atm2.ignore is False) and (atm3.ignore is False):
+				# if (atm1.ignore is False) and (atm2.ignore is False) and (atm3.ignore is False):
 
-					bond_1_2 = mol.are_bonded(idx1, idx2)
-					bond_2_3 = mol.are_bonded(idx2, idx3)
+				bond_1_2 = mol.are_bonded(idx1, idx2)
+				bond_2_3 = mol.are_bonded(idx2, idx3)
 
-					if (bond_1_2 is False) or (bond_2_3 is False):
-						sys.exit('Problem while reading list of angles: Atom {} is not a central atom'.format(atm2.nam))
+				if (bond_1_2 is False) or (bond_2_3 is False):
+					sys.exit('Problem while reading list of angles: Atom {} is not a central atom'.format(atm2.nam))
 
-					d1 = mol.get_bond_distance(idx1, idx2)
-					d3 = mol.get_bond_distance(idx2, idx3)
+				d1 = mol.get_bond_distance(idx1, idx2)
+				d3 = mol.get_bond_distance(idx2, idx3)
 
-					dist = math.sqrt(d1 * d1 + d3 * d3 - 2 * d1 * d3 * math.cos(math.radians(theta)))
+				dist = math.sqrt(d1 * d1 + d3 * d3 - 2 * d1 * d3 * math.cos(math.radians(theta)))
 
-					mol.add_bond_distance(idx1, idx3, dist)
+				mol.add_bond_distance(idx1, idx3, dist)
 
 
 def readSymmetry(atomTypes, symTyp, fileName):
