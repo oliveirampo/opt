@@ -24,6 +24,7 @@ from abc import ABC, abstractmethod
 from collections import Counter
 import numpy as np
 import math
+import sys
 
 import myExceptions
 
@@ -203,6 +204,15 @@ class ChargeDistributionMethod(ABC):
             if n == 1:
                 atoms[idx].charge.cur -= qtot
                 break
+
+        charges = []
+        for idx in cg:
+            chg = atoms[idx].charge.cur
+            charges.append(chg)
+        qtot = sum(charges)
+        if abs(qtot) > 1.00E-10:
+            sys.exit('Q = {} for {}'.format(qtot, mol.cod))
+
 
     def coulombIntegrals(self, maxOrder, N, connectivity, distance_matrix, diameters):
         """Computes coulomb integrals.

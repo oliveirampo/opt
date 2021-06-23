@@ -19,6 +19,7 @@ import IO
 import iac
 import ana
 import plot
+import check
 import optimize
 import gromos_mtb
 import myExceptions
@@ -57,7 +58,7 @@ class Action(ABC):
 	def get_choices():
 		"""Returns list of possible choices of actions."""
 
-		return ['PREP', 'GEN', 'ANA', 'OPT', 'SUB', 'PLOT', 'MTB']
+		return ['PREP', 'GEN', 'ANA', 'OPT', 'SUB', 'PLOT', 'MTB', 'CHECK']
 
 	@staticmethod
 	def get_object(runType, it):
@@ -68,7 +69,8 @@ class Action(ABC):
 		:return: One of the classes that implements Action.
 		"""
 
-		classes = {"PREP": Prep, "GEN": Gen, "ANA": Ana,  "PLOT": Plot, "SUB": Sub, "OPT": Opt, "MTB": MTB}
+		classes = {"PREP": Prep, "GEN": Gen, "ANA": Ana, "PLOT": Plot, "SUB": Sub, "OPT": Opt, "MTB": MTB,
+				   "CHECK": Check}
 
 		if runType not in classes:
 			raise myExceptions.ClassNotImplemented(runType, 'Action')
@@ -297,3 +299,19 @@ class MTB(Action):
 		newIacDict = createNewIFP.create(conf, atomTypes)
 
 		gromos_mtb.updateMTB(newIacDict, atomTypes, molecules, mtbDir, mtbGROMOSDir)
+
+
+class Check(Action):
+	"""Perform a few checks on the simulation results"""
+
+	def run(self, conf, molecules, atomTypes):
+		"""Check parameter ratio.
+
+		:param conf: (configuration.Conf) Configuration object
+		:param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+		:param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
+		"""
+
+		molecules, atomTypes, _ = Action.read_extra_inp_files(conf, molecules, atomTypes)
+
+		check.prm_ratio(molecules, atomTypes)

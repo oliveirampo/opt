@@ -146,6 +146,11 @@ def addSimRunningAverage(nJobs, startJob, propCode, properties, mol):
 
         # mol.addTrajectory(letter, traj)
         avgs = traj[-1, 1:]
+
+        if propCode == 'D':
+            if avgs[-1] < 340:
+                mol.run = False
+
         mol.addRunningAverages(propCode, avgs)
 
 
