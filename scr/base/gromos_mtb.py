@@ -3,8 +3,6 @@ import shutil
 import sys
 import os
 
-import createNewIFP
-
 
 def updateMTB(newIacDict, atomTypes, molecules, mtbDir, mtbGROMOSDir):
     """reates GROMOS (mtb) topology files.

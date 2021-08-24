@@ -15,18 +15,18 @@ from abc import ABC, abstractmethod
 import shutil
 import os
 
-import IO
-import iac
-import ana
-import plot
-import check
-import optimize
-import gromos_mtb
-import myExceptions
-import createNewIFP
-import prepareFiles
-import writeOutFiles
-import molecules_utils
+from scr.base import IO
+from scr.base import iac
+from scr.base import ana
+from scr.base import plot
+from scr.base import check
+from scr.base import optimize
+from scr.base import gromos_mtb
+from scr.base import myExceptions
+from scr.base import createNewIFP
+from scr.base import prepareFiles
+from scr.base import writeOutFiles
+from scr.base import molecules_utils
 
 
 class Action(ABC):

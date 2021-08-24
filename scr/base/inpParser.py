@@ -6,7 +6,7 @@ Methods:
 
 import argparse
 
-import action
+from scr.base import action
 
 
 def parse():

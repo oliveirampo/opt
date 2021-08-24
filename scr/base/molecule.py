@@ -8,14 +8,14 @@ import pandas as pd
 import numpy as np
 import sys
 
-from scr.effectiveParameter import C6
-from scr.effectiveParameter import C12
-from scr.effectiveParameter import NEI
-from scr.effectiveParameter import NRM
-from scr import parameter_utils
-import scr.effectiveParameter
-from scr.sensitivity import Sensitivity
-from scr.ChargeDistribution import BondChargeDistributionMethod
+from scr.base.effectiveParameter import C6
+from scr.base.effectiveParameter import C12
+from scr.base.effectiveParameter import NEI
+from scr.base.effectiveParameter import NRM
+from scr.base import effectiveParameter
+from scr.base import parameter_utils
+from scr.base.sensitivity import Sensitivity
+from scr.base.ChargeDistribution import BondChargeDistributionMethod
 
 
 class Molecule:

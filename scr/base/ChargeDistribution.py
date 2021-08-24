@@ -29,7 +29,7 @@ import math
 import sys
 import re
 
-import scr.myExceptions
+import scr.base.myExceptions
 
 
 class ChargeDistributionMethod(ABC):
@@ -722,8 +722,9 @@ class Charge_group_type(ABC):
         priority_atoms = ['F', 'Cl', 'Br', 'I', 'H', 'O', 'N', 'S', 'P']
 
         for a in mol_atoms:
-            symbol = mol_atoms[a].symbol
-            match = re.match("[^0-9]", mol_atoms[a].symbol)
+            # symbol = mol_atoms[a].symbol
+            symbol = mol_atoms[a].nam
+            match = re.match("[^0-9]", symbol)
             symbol = symbol[:match.span()[1]]
             if symbol in priority_atoms:
                 atoms[mol_atoms[a].idx] = mol_atoms[a]

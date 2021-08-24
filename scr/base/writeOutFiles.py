@@ -13,7 +13,7 @@ from shutil import copyfile
 import os
 
 
-import myExceptions
+from scr.base import myExceptions
 
 
 def copyCOTO(molecules):

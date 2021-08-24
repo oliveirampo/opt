@@ -19,7 +19,7 @@ from abc import ABC, ABCMeta, abstractmethod
 import math
 import sys
 
-from scr import myExceptions
+from scr.base import myExceptions
 
 
 def createEffectiveParameterFactory(typ, idx, type_c, type_14, iac1, iac2, typAtm1, typAtm2, val):

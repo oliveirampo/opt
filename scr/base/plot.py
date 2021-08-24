@@ -24,7 +24,7 @@ import math
 import sys
 import os
 
-import myExceptions
+from scr.base import myExceptions
 
 
 def run(conf):

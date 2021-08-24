@@ -2,9 +2,9 @@ from datetime import datetime
 import traceback
 import sys
 
-from configuration import Conf
-import myExceptions
-import inpParser
+from scr.base.configuration import Conf
+from scr.base import myExceptions
+from scr.base import inpParser
 
 
 def main():

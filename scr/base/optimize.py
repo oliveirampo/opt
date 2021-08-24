@@ -23,8 +23,8 @@ import math
 import sys
 import os
 
-import molecules_utils
-import ana
+from scr.base import molecules_utils
+from scr.base import ana
 
 
 def runOptimization(conf, crPrms, molecules, atomTypes):
