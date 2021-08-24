@@ -20,13 +20,16 @@ Classes:
     O_N
 """
 
+
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 from collections import Counter
 import numpy as np
 import math
 import sys
+import re
 
-import myExceptions
+import scr.myExceptions
 
 
 class ChargeDistributionMethod(ABC):
@@ -212,7 +215,6 @@ class ChargeDistributionMethod(ABC):
         qtot = sum(charges)
         if abs(qtot) > 1.00E-10:
             sys.exit('Q = {} for {}'.format(qtot, mol.cod))
-
 
     def coulombIntegrals(self, maxOrder, N, connectivity, distance_matrix, diameters):
         """Computes coulomb integrals.
@@ -708,6 +710,29 @@ class Charge_group_type(ABC):
         cr = classes[n]()
         return cr
 
+    @staticmethod
+    def get_ordered_atoms(mol_atoms):
+        """Get dictionary of atoms with carbon atoms at the end.
+
+        :param mol_atoms: (dict)
+        :return:
+        """
+
+        atoms = OrderedDict()
+        priority_atoms = ['F', 'Cl', 'Br', 'I', 'H', 'O', 'N', 'S', 'P']
+
+        for a in mol_atoms:
+            symbol = mol_atoms[a].symbol
+            match = re.match("[^0-9]", mol_atoms[a].symbol)
+            symbol = symbol[:match.span()[1]]
+            if symbol in priority_atoms:
+                atoms[mol_atoms[a].idx] = mol_atoms[a]
+        for a in mol_atoms:
+            if a not in atoms:
+                atoms[a] = mol_atoms[a]
+
+        return atoms
+
 
 class Atomic(Charge_group_type):
     """Defines one charge group for the whole molecule.
@@ -983,7 +1008,7 @@ class Mix(Charge_group_type):
         :param mol: (Molecule) Molecule.
         """
 
-        atoms = mol.atoms
+        atoms = self.get_ordered_atoms(mol.atoms)
 
         indexes = []
         for idx1 in atoms:

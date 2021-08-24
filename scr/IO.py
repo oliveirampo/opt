@@ -26,15 +26,15 @@ import math
 import sys
 import os
 
-import myExceptions
-import configuration
-import molecules_utils
-import effectiveParameter
-from iac import IAC
-from atom import Atom
-from matrix import Matrix
-from molecule import Molecule
-from property import Dns, Hvp
+from scr import myExceptions
+from scr import configuration
+from scr import molecules_utils
+from scr import effectiveParameter
+from scr.iac import IAC
+from scr.atom import Atom
+from scr.matrix import Matrix
+from scr.molecule import Molecule
+from scr.property import Dns, Hvp
 
 
 def readFile(fileName):

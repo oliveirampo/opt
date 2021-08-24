@@ -10,7 +10,7 @@ Classes:
 import numpy as np
 
 
-import ana
+from scr import ana
 
 
 class Property:

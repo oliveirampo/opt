@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import math
 
-import myExceptions
+from scr import myExceptions
 
 
 class CR(ABC):

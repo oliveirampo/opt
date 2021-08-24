@@ -8,10 +8,10 @@ Classes:
 import numpy as np
 import sys
 
-import ChargeDistribution
-from matrix import Matrix
-import combiningRule
-import IO
+from scr import ChargeDistribution
+from scr.matrix import Matrix
+from scr import combiningRule
+from scr import IO
 
 
 class Conf:

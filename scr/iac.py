@@ -9,7 +9,7 @@ Classes:
 import sys
 
 
-from parameter import Parameter
+from scr.parameter import Parameter
 
 
 class IAC:
