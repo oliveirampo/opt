@@ -153,7 +153,7 @@ def writeSubScript(conf, molecules):
 
     # create scr files with bash script
     for cod in molecules:
-        cmd = '../scr/prepare.sh {} {} {} {}'.format(cod, it, nJobs, wall_time)
+        cmd = '../scr/base/prepare.sh {} {} {} {}'.format(cod, it, nJobs, wall_time)
         os.system(cmd)
 
     # check if all files were created
@@ -165,5 +165,5 @@ def writeSubScript(conf, molecules):
     # submit scripts
     for cod in molecules:
         submitFile = 'sub_{}/{}_{}_sub.sh'.format(it, cod, 0)
-        cmd = '../scr/bsub.sh {} {} {} {}'.format(cod, it, 0, wall_time)
+        cmd = '../scr/base/bsub.sh {} {} {} {}'.format(cod, it, 0, wall_time)
         # os.system(cmd)

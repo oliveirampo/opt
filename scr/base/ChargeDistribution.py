@@ -29,7 +29,7 @@ import math
 import sys
 import re
 
-import scr.base.myExceptions
+from scr.base import myExceptions
 
 
 class ChargeDistributionMethod(ABC):
@@ -719,15 +719,24 @@ class Charge_group_type(ABC):
         """
 
         atoms = OrderedDict()
-        priority_atoms = ['F', 'Cl', 'Br', 'I', 'H', 'O', 'N', 'S', 'P']
+        # priority_atoms = ['F', 'Cl', 'Br', 'I', 'O', 'N', 'S', 'P']
+        #
+        # for a in mol_atoms:
+        #     symbol = mol_atoms[a].symbol
+        #     # symbol = mol_atoms[a].nam
+        #     match = re.match("[^0-9]", symbol)
+        #     symbol = symbol[:match.span()[1]]
+        #     if symbol in priority_atoms:
+        #         atoms[mol_atoms[a].idx] = mol_atoms[a]
 
         for a in mol_atoms:
-            # symbol = mol_atoms[a].symbol
-            symbol = mol_atoms[a].nam
+            symbol = mol_atoms[a].symbol
+            # symbol = mol_atoms[a].nam
             match = re.match("[^0-9]", symbol)
             symbol = symbol[:match.span()[1]]
-            if symbol in priority_atoms:
-                atoms[mol_atoms[a].idx] = mol_atoms[a]
+            if (symbol == 'C') and (a not in atoms):
+                atoms[a] = mol_atoms[a]
+
         for a in mol_atoms:
             if a not in atoms:
                 atoms[a] = mol_atoms[a]
@@ -985,23 +994,15 @@ class Mix(Charge_group_type):
             Defines charge groups of molecule.
     """
 
-    X = [32, 33, 34, 67]
-    CX = [45, 39, 69, 68]
-
-    RO = [100, 101, 102, 103, 104, 105, 106, 115, 116, 117, 118]
-    CC_EST = [119, 120, 121, 122]
-    C_EST = [102]
-
-    CARBON_OH = [111, 112, 113, 114]
-    CARBON_NH = [138, 139, 140, 141, 142, 143, 144]
-    CARBON_NOH = [146, 147, 148, 149]
+    C_double_O_acd = 12  # C=O
+    OH_acd = 98
+    C_double_O_amd = 18  # C=O
     N_amid = 6
-    N_amin = 7
-    O_double_C_acid = 1  # O=C
-    C_double_O_acid = 12  # C=O
-    OH_aci = 98
-    O_double_C_amid = 4  # O=C
-    C_double_O_amid = 18  # C=O
+    R = [13, 14, 15, 16, 17,
+         45, 39, 69, 68,
+         103, 104, 105, 106, 101, 100,
+         102, 115, 116, 117, 118, 119, 120, 121, 122,
+         111, 112, 113, 114, 12, 144, 142, 140, 138, 18, 146, 147, 148, 149]
 
     def setCG(self, mol):
         """Defines charge groups of molecule.
@@ -1009,157 +1010,70 @@ class Mix(Charge_group_type):
         :param mol: (Molecule) Molecule.
         """
 
-        atoms = self.get_ordered_atoms(mol.atoms)
+        atoms = mol.atoms
+        indexes_dict = {}
 
-        indexes = []
         for idx1 in atoms:
             a = atoms[idx1]
             a.used = 0
 
-        # Try first to add all CX atoms
         for idx1 in atoms:
             a = atoms[idx1]
-            if (not a.ignore) and (a.iac in self.CX):
-                indexes.append([idx1])
-                a.used = 1
+            if a.used:
+                continue
 
-        # If list is still empty, add first non fixed atom to first array
-        if len(indexes) == 0:
-            for idx1 in atoms:
-                a = atoms[idx1]
-                if not a.ignore:
-                    indexes.append([idx1])
-                    a.used = 1
-                    break
+            # get 1st neighbors
+            a.used = 1
+            nbs = self.add_to_CG(idx1, atoms, mol)
+            indexes_dict[idx1] = nbs
 
-        for idx1 in atoms:
-            atm1 = atoms[idx1]
+            # get 1st of 1st neighbors
+            i = 0
+            while i < len(atoms):
+                if i >= len(indexes_dict[idx1]):
+                    i = len(atoms)
 
-            if atm1.ignore is False:
+                else:
+                    idx2 = indexes_dict[idx1][i]
+                    nbs = self.add_to_CG(idx2, atoms, mol)
+                    indexes_dict[idx1].extend(nbs)
+                    i += 1
 
-                iac1 = atm1.iac
-                pos = -1
+        indexes = []
+        for k, v in indexes_dict.items():
+            if len(v) == 0:
+                continue
 
-                if atm1.used == 1:
-                    continue
-
-                # loop over list of lists
-                for i in range(len(indexes)):
-
-                    # loop over current list
-                    for j in range(len(indexes[i])):
-
-                        idx2 = indexes[i][j]
-                        bond_1_2 = mol.are_bonded(idx1, idx2)
-
-                        if idx1 == idx2:
-                            continue
-
-                        elif iac1 == self.C_double_O_acid:
-                            break
-
-                        elif iac1 == self.OH_aci:
-                            break
-
-                        elif iac1 == self.O_double_C_amid:
-                            break
-
-                        elif iac1 == self.N_amid:
-                            break
-
-                        elif iac1 == self.N_amin or iac1 in self.CARBON_NH:
-                            # check if there is a nb already in indexes
-                            for x in range(len(indexes)):
-                                for y in range(len(indexes[x])):
-                                    idx3 = indexes[x][y]
-                                    bond_1_3 = mol.are_bonded(idx1, idx3)
-
-                                    if bond_1_3:
-                                        iac3 = atoms[idx3].iac
-                                        if iac1 in self.CARBON_NH and iac3 in self.CARBON_NH:
-                                            continue
-                                        atm1.used = 1
-                                        pos = x
-                                        break
-
-                            if pos == -1:
-                                break
-
-                        elif bond_1_2:
-                            atm2 = atoms[idx2]
-                            iac2 = atm2.iac
-
-                            if iac1 in self.CARBON_OH and iac2 in self.CARBON_OH:
-                                continue
-
-                            elif iac1 == self.C_double_O_amid and iac2 == self.C_double_O_amid:
-                                continue
-
-                            elif (iac1 != self.O_double_C_acid) and (iac2 == self.C_double_O_acid):
-                                continue
-
-                            elif iac1 in self.RO and iac2 in self.RO:
-                                continue
-
-                            elif (iac1 in self.CARBON_OH and iac2 in self.C_EST) or \
-                                (iac2 in self.CARBON_OH and iac1 in self.C_EST):
-                                continue
-
-                            elif (iac1 in self.RO and iac2 in self.CARBON_OH) or \
-                                    (iac2 in self.RO and iac1 in self.CARBON_OH):
-                                continue
-
-                            elif (iac1 in self.CARBON_OH and iac2 in self.CARBON_NH) or \
-                                    (iac2 in self.CARBON_OH and iac1 in self.CARBON_NH):
-                                continue
-
-                            elif iac1 in self.CC_EST:
-                                continue
-
-                            atm1.used = 1
-                            pos = i
-                            break
-
-                        # 2 esters = C=O should be in the same CG
-                        # check is nbs of C=O are already connected to any other ester group
-                        elif iac1 in self.C_EST:
-                            neighbors_indexes = mol.get_neighbors_of_atom(idx1)
-
-                            for idx_nb in neighbors_indexes:
-                                atom_nb = atoms[idx_nb]
-                                iac_nb = atom_nb.iac
-
-                                for x in range(len(indexes)):
-                                    for y in range(len(indexes[x])):
-                                        other_idx_tmp = indexes[x][y]
-                                        are_bonded = mol.are_bonded(idx_nb, other_idx_tmp)
-
-                                        if idx_nb == other_idx_tmp:
-                                            continue
-
-                                        elif atom_nb.ignore:
-                                            break
-
-                                        elif iac_nb in self.C_EST:
-                                            break
-
-                                        elif iac_nb in self.CC_EST:
-                                            break
-
-                                        elif are_bonded:
-                                            atm1.used = 1
-                                            pos = x
-                                            break
-
-                    # else:
-                    # nothing to do
-
-                    if pos != -1:
-                        indexes[pos].append(idx1)
-                        break
-
-                if atm1.used == 0:
-                    indexes.append([idx1])
+            idx = [k]
+            idx.extend(v)
+            indexes.append(idx)
 
         mol.CGs = indexes
-        # print(indexes, '\n')
+
+    def add_to_CG(self, idx1, atoms, mol):
+        nbs_in_CG = []
+        nbs = mol.get_neighbors_of_atom(idx1)
+        iac1 = atoms[idx1].iac
+
+        for idx2 in nbs:
+            atm2 = atoms[idx2]
+            iac2 = atm2.iac
+            if atm2.used:
+                continue
+
+            if iac1 in self.R and iac2 in self.R:
+                continue
+
+            elif (iac1 == self.C_double_O_acd and iac2 == self.OH_acd) or (
+                        iac2 == self.C_double_O_acd and iac1 == self.OH_acd):
+                continue
+
+            elif (iac1 == self.C_double_O_amd and iac2 == self.N_amid) or (
+                    iac2 == self.C_double_O_amd and iac1 == self.N_amid):
+                continue
+
+            else:
+                nbs_in_CG.append(idx2)
+                atm2.used = 1
+
+        return nbs_in_CG

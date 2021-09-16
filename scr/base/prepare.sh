@@ -25,7 +25,7 @@ samDir=${PWD}/sam_${it}
 
 for i in `seq 0 $nJobs`; do
 	f=${subDir}/${cmp}_${i}_sub.sh
-	cp ../scr/$file $f
+	cp ../scr/base/$file $f
 
 	sed -i "s/INP_DIR_MAPE/${localInpDirSed}/g"	$f
 	sed -i "s/PRMDIR_MAPE/${prmDirSed}/g"		$f

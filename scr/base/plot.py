@@ -41,10 +41,10 @@ def run(conf):
 
     data = getData(it, plotConf)
 
-    plot_data(plotConf, data)
+    # plot_data(plotConf, data)
 
     # plot_target_function(it, plotConf)
-    # plot_prm(it, plotConf)
+    plot_prm(it, plotConf)
 
 
 def getData(it, plotConf):
@@ -414,7 +414,7 @@ def plot_prm_NB(data, plotConf, plotDir):
         axes[j].tick_params(axis="x", labelsize=12)
         axes[j].tick_params(axis="y", labelsize=12)
 
-        axes[j].xaxis.set_ticks(np.arange(0, 7, 2))
+        # axes[j].xaxis.set_ticks(np.arange(0, 7, 2))
 
     if nPrms == 4:
         axes[nPrms - 1].legend(loc='upper right', fontsize=16, bbox_to_anchor=(1.875, 1.0), frameon=False)
