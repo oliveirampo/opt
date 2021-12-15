@@ -207,6 +207,9 @@ def checkInpFiles(cnf):
 
 	files = cnf.inpFiles
 	for fileName in files:
+		if fileName in [cnf.atomListFile, cnf.bondListFile, cnf.angListFile]:
+			continue
+
 		if not os.path.exists(fileName):
 			raise myExceptions.NoSuchFile(fileName)
 

@@ -11,7 +11,7 @@ def run(molecules):
 
     copyFiles(molecules)
 
-    cmd = 'bash ../scr/make_lists.sh'
+    cmd = 'bash ../scr/base/make_lists.sh'
     os.system(cmd)
 
 

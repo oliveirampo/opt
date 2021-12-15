@@ -53,7 +53,7 @@ class AtomType(object):
         self.matrix.append(n)
 
 
-def create(conf, parameters):
+def create(conf, parameters, crPrms):
     """Creates new IFP file with new dummy atom types.
 
     :param conf: (configuration.Conf) Configuration object
@@ -63,7 +63,7 @@ def create(conf, parameters):
                         If there are none, the idx is mapped to itself.
     """
 
-    fileName = 'prm/2016H66_upd.ifp'
+    fileName = 'prm/2016H66_base.ifp'
     outName = 'prm/2016H66_upd_NEW.ifp'
 
     row1, row2, block = readFile(fileName)
@@ -73,18 +73,16 @@ def create(conf, parameters):
     minimalSetIAC, newIacDict = getLJAtomTypes(parameters)
 
     N = len(minimalSetIAC)
-    addAtomType(conf, atomTypes, N, minimalSetIAC, newIacDict, parameters)
+    addAtomType(conf, atomTypes, N, minimalSetIAC, newIacDict, parameters, crPrms)
 
     check(atomTypes)
 
     writeOut(row1, row2, atomTypes, fileName, outName)
 
-    # add other IACs.
-    addOtherIAC(newIacDict)
-
     return newIacDict
 
 
+# not used anymore
 def addOtherIAC(newIacDict):
     """Adds indexes of other IAC to dictionary.
 
@@ -94,24 +92,13 @@ def addOtherIAC(newIacDict):
                         If there are none, the idx is mapped to itself.
     """
 
-    # maxIac = 0
-    # for key in newIacDict:
-    #     iac = newIacDict[key]
-    #     if iac > maxIac:
-    #         maxIac = iac
-    #
-    # nIac = maxIac - len(minimalSetIAC)
-    #
-    # for iac in range(1, nIac + 1):
-    #     if iac not in newIacDict:
-    #         newIacDict[iac] = iac
-
     # add united-atom
     for iac in [13, 14, 15, 16]:
         if iac not in newIacDict:
             newIacDict[iac] = iac
 
     # specific for O+N family
+    # [iac1, iac2] -> iac1 has the same parameters as iac2
     for pair in [[103, 13], [104, 14], [105, 15], [106, 16],
                  [115, 13], [116, 14], [117, 15], [118, 16], [119, 13], [120, 14], [121, 15], [122, 16],
                  [21, 21], [111, 13], [112, 14], [113, 15], [114, 16],
@@ -126,7 +113,7 @@ def addOtherIAC(newIacDict):
 
 def getLJAtomTypes(parameters):
     """Returns unique set of IAC parameters.
-    Ignore those whose rng_sig == 0.
+    Ignore those whose rng_sig == 0 (except when sig != 0).
     Only use first parameter if they share the same sig and eps values.
 
     :param parameters: (collections.OrderedDict) Ordered dictionary of atom types.
@@ -144,7 +131,7 @@ def getLJAtomTypes(parameters):
     # check for symmetry
     for iacIdx in parameters:
         atmTyp = parameters[iacIdx]
-        if not atmTyp.sig.rng:
+        if (atmTyp.sig.cur != 0.0) and (not atmTyp.sig.rng):
             continue
 
         if atmTyp.sig.hasSymmetricIAC():
@@ -157,7 +144,7 @@ def getLJAtomTypes(parameters):
 
     for iacIdx in parameters:
         atmTyp = parameters[iacIdx]
-        if not atmTyp.sig.rng:
+        if (atmTyp.sig.cur != 0.0) and (not atmTyp.sig.rng):
             continue
 
         symm = atmTyp.sig.symmetry
@@ -298,7 +285,7 @@ def addDummyAtomType(atomTypes, N):
         atomTypes.append(AtomType(num, name, val, val, val, val, val, val, matrix))
 
 
-def addAtomType(conf, atomTypes, N, minimalSetIAC, newIacDict, parameters):
+def addAtomType(conf, atomTypes, N, minimalSetIAC, newIacDict, parameters, crPrms):
     """Adds AtomType object to
 
     :param conf: (configuration.Conf) Configuration object
@@ -315,8 +302,9 @@ def addAtomType(conf, atomTypes, N, minimalSetIAC, newIacDict, parameters):
     matrix = conf.matrix
     scl_sig_NEI = conf.scl_sig_NEI
     scl_eps_NEI = conf.scl_eps_NEI
-    nrmParameter = effectiveParameter.NRM()
+    # nrmParameter = effectiveParameter.NRM()
     neiParameter = effectiveParameter.NEI()
+    alpha = crPrms['alpha']['val']
 
     for i in range(0, N):
         # extend matrix of all existing atom type by 1
@@ -338,17 +326,37 @@ def addAtomType(conf, atomTypes, N, minimalSetIAC, newIacDict, parameters):
             if value == iacIdx:
                 newIacDict[key] = int(newIac)
 
-        name = iac.typ
+        # name = iac.typ
+        name = iac.nam
 
         sigi = iac.sig.cur
         epsi = iac.eps.cur
-        sigij = cr.getSigma(sigi, sigi)
-        epsij = cr.getEpsilon(epsi, epsi, sigi, sigi)
+        sigi_2 = sigi
+        epsi_2 = epsi
 
-        c12_1 = 4.0 * epsij * math.exp(12.0 * math.log(sigij))
-        c6, c12_2 = nrmParameter.computeCR(cr, scl_sig_NEI, scl_eps_NEI, iac, iac, matrix)
-        c6_nei, c12_nei = neiParameter.computeCR(cr, scl_sig_NEI, scl_eps_NEI, iac, iac, matrix)
-        c12_3 = 0.0
+        sigij = cr.getSigma(sigi, sigi, alpha)
+        epsij = cr.getEpsilon(epsi, epsi, sigi, sigi, alpha)
+        sigij_2 = sigij
+        epsij_2 = epsij
+
+        if iac.iac in matrix:
+            sigi_2 = iac.sig_2.cur
+            epsi_2 = iac.eps_2.cur
+            sigij_2 = cr.getSigma(sigi_2, sigi_2, alpha)
+            epsij_2 = cr.getEpsilon(epsi_2, epsi_2, sigi_2, sigi_2, alpha)
+
+        if sigij == 0.0:
+            c6 = 0.0
+            c12_1 = 0.0
+            c12_2 = 0.0
+            c12_3 = 0.0
+            c6_nei, c12_nei = 0.0, 0.0
+        else:
+            c6 = 4.0 * epsij * math.exp(6.0 * math.log(sigij))
+            c12_1 = 4.0 * epsij * math.exp(12.0 * math.log(sigij))
+            c12_2 = 4.0 * epsij_2 * math.exp(12.0 * math.log(sigij_2))
+            c12_3 = 0.0
+            c6_nei, c12_nei = neiParameter.computeCR(cr, crPrms, scl_sig_NEI, scl_eps_NEI, iac, iac, matrix)
 
         c6 = toScientific(np.sqrt(c6))
         c12_1 = toScientific(np.sqrt(c12_1))

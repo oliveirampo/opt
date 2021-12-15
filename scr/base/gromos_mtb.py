@@ -4,8 +4,11 @@ import sys
 import os
 
 
+from scr.base import myExceptions
+
+
 def updateMTB(newIacDict, atomTypes, molecules, mtbDir, mtbGROMOSDir):
-    """reates GROMOS (mtb) topology files.
+    """Creates GROMOS (mtb) topology files.
 
     :param newIacDict: (dict) Dictionary that maps IAC idx to first idx in list of symmetric IAC indexes.
                         If there are none, the idx is mapped to itself.
@@ -99,7 +102,8 @@ def readMTBCHG(fileName):
     rows = OrderedDict()
     for i in range(len(mtb)):
         if mtb[i].startswith('MTBUILDBLSOLUTE'):
-            cod = mtb[i + 2].strip()
+            #cod = mtb[i + 2].strip()
+            cod = mtb[i + 3].strip()
             rows[cod] = {}
 
             for j in range(i + 1, len(mtb)):
@@ -129,7 +133,7 @@ def formatStrCHG(r):
     r[4] = '{:.3f}'.format(charge)
 
     nb = '     '.join(r[7:])
-    s = '{:>5} {:>2} {:>6} {:>4} {:>7} {:>2} {:>3}     {}\n'.format(r[0], r[1], r[2], r[3], r[4], r[5], r[6], nb)
+    s = '{:>5} {:>3} {:>6} {:>4} {:>7} {:>2} {:>3}     {}\n'.format(r[0], r[1], r[2], r[3], r[4], r[5], r[6], nb)
     return s
 
 
@@ -142,6 +146,9 @@ def updateCharges(rows, mtb, charges):
     """
 
     for cod in charges:
+        if cod not in rows:
+            raise myExceptions.MissingKeyWordError(cod, "mtb.file (problem reading file?)")
+
         selectedRows = rows[cod]
         selectedCharges = charges[cod]
 

@@ -48,32 +48,37 @@ def runAna(conf, molecules, anaDir):
     newMolFile = anaDir + '/mol.dat'
     rmsdFile = anaDir + '/rmsd_' + str(it) + '.dat'
 
+    for cod in molecules:
+        # print(cod)
+        extractData(conf, molecules[cod])
+
+    df = getExpSimData(molecules)
+
     with open(allOutFile, 'w') as allOut, open(allSumFile, 'w') as allSum,\
-            open(resFile, 'w') as res, open(newMolFile, 'w') as newMolData,\
-            open(rmsdFile, 'w') as rmsdOut:
-
+            open(resFile, 'w') as res, open(newMolFile, 'w') as newMolData:
         for cod in molecules:
-            extractAndWriteData(conf, molecules[cod], allOut, allSum, res, newMolData)
+            writeData(molecules[cod], allOut, allSum, res, newMolData)
 
-        df = getExpSimData(molecules)
-        writeRmsd(df, rmsdOut)
+    with open(rmsdFile, 'w') as rmsdOut:
+        writeRmsd(df, conf, rmsdOut)
 
 
-def extractAndWriteData(conf, mol, allOut, allSum, res, newMolData):
+def extractData(conf, mol):
     # add running average of each job
     addSimprop(conf, mol)
 
     if mol.run:
-        print(mol.cod)
-        writeAllFile(mol, allOut)
-
-        writeAllSum(mol, allSum)
-
+        # print(mol.cod)
         addSens(conf, mol)
 
+
+def writeData(mol, allOut, allSum, res, newMolData):
+    if mol.run:
+        writeAllFile(mol, allOut)
         writeResFile(mol, res)
 
-        writeMolData(mol, newMolData)
+    writeMolData(mol, newMolData)
+    writeAllSum(mol, allSum)
 
 
 def addSimprop(conf, mol):
@@ -279,7 +284,7 @@ def writeAllFile(mol, out):
     cod = mol.cod
 
     frm = mol.frm
-    run = '1.0'
+    run = mol.run
     pre_sim = mol.pre_sim
     tem_sim = mol.tem_sim
 
@@ -328,23 +333,31 @@ def writeAllSum(mol, allSum):
         if ref != 0.0:
             err = 100 * dev / ref
 
-        if wei == 0.0:
-            wei = '*'
-            ref = '-'
-            # sim = '-'
-            sim = '{:.1f}'.format(sim)
+        if np.isnan(sim):
+            ref = '{:.1f}'.format(ref)
+            sim = '{:.1f}'.format(0.0)
             dev = '-'
             err = '-'
-            # dd = '-'
-            dd = '{:.1f}'.format(dd)
-        else:
-            ref = '{:.1f}'.format(ref)
-            sim = '{:.1f}'.format(sim)
-            dev = '{:.1f}'.format(dev)
-            err = '{:.1f}'.format(err)
-            dd = '{:.1f}'.format(dd)
+            dd = '-'
 
-        allSum.write('{:3} {:>8} {:6} {:>6} {:>6} ( {:>4} {:6} ) {} '
+        else:
+            if wei == 0.0:
+                wei = '*'
+                ref = '-'
+                sim = '{:.1f}'.format(sim)
+                dev = '-'
+                err = '-'
+                dd = '-'
+                # dd = '{:.1f}'.format(dd)
+
+            else:
+                ref = '{:.1f}'.format(ref)
+                sim = '{:.1f}'.format(sim)
+                dev = '{:.1f}'.format(dev)
+                err = '{:.1f}'.format(err)
+                dd = '{:.1f}'.format(dd)
+
+        allSum.write('{:3} {:>8} {:6} {:>7} {:>6} ( {:>6} {:6} ) {} '
         .format(wei, ref, sim, dev, err, dd, unit, '/'))
 
     allSum.write('\n')
@@ -401,7 +414,7 @@ def writeMolData(mol, out):
     if run:
         run = 1
 
-    out.write('{:8} {:10} {:2} {:6} {:7}'
+    out.write('{:8} {:20} {:2} {:6} {:7}'
     .format(cod, frm, run, pre_sim, tem_sim))
     out.write(s)
     out.write('{:7} {:7} {:6} {:6}\n'.format(mlp_ref, blp_ref, tem_cri, eps_ref))
@@ -446,10 +459,11 @@ def getExpSimData(molecules):
     return df
 
 
-def writeRmsd(df, out):
+def writeRmsd(df, conf, out):
     """Writes root-mean-square deviations to txt file.
 
     :param df: (DataFrame) Table with main results.
+    :param conf: (configuration.Conf) Configuration object.
     :param out: (output object) Output file.
     """
 
@@ -459,53 +473,101 @@ def writeRmsd(df, out):
         if letter not in propLetters:
             propLetters.append(letter)
 
-    df['short_cod'] = df['cod'].map(lambda x: x[0] + x[2])
+    map_cod_family = conf.plotConf.map_cod_family
+    fam_ordered, nhb_group, hbd_group = get_ordered_family_code(map_cod_family)
+
+    df = df.apply(assign_family, axis=1, map_cod_family=map_cod_family, nhb_group=nhb_group, hbd_group=hbd_group)
     ref_columns = ['ref_' + prop for prop in propLetters]
 
     # get statistics per group of compounds (based on short_cod)
-    df_grouped = df.groupby('short_cod')
+    df_grouped = df.groupby(['fam', 'n_fg'])
+
+    # oder groups
     codes = list(df_grouped.groups.keys())
+    codes = sorted(codes, key=lambda x: fam_ordered.index(x[0]))
+
     for i in range(len(codes)):
         cod = codes[i]
         data = df_grouped.get_group(cod)
 
-        data_non_empty = data.dropna(subset=ref_columns, how='all')
-        nMol = getNumberOfMolecules(data_non_empty)
+        n_fg = cod[1]
+        if n_fg == '0':
+            n_fg = '-'
 
-        # print('{:3} {:4}'.format(cod, nMol), end=' ')
-        out.write('{:3} {:4}'.format(cod, nMol))
+        # For each fam + n_fg
+        write_rmsd_helper(data, n_fg, cod, propLetters, ref_columns, out)
 
-        for letter in propLetters:
-            dat = data.dropna(subset=['ref_{}'.format(letter)])
-            nData = dat.shape[0]
-
-            if nData == 0:
-                # print('{:6} {:>6} {:>6} {:>6} {:>7}'.format(nData, '-', '-', '-', '-', '-'), end=' ')
-                out.write('{:6} {:>6} {:>6} {:>6} {:>7}'.format(nData, '-', '-', '-', '-', '-'))
-
-            else:
-                prop_avg, rmsd, aved, mad = getRmsd(letter, dat)
-
-                # print('{:6} {:6.1f} {:6.1f} {:6.1f} {:7.1f}'.format(nData, rmsd, aved, mad, prop_avg), end=' ')
-                out.write('{:6} {:6.1f} {:6.1f} {:6.1f} {:7.1f}'.format(nData, rmsd, aved, mad, prop_avg))
-
-        # print('')
-        out.write('\n')
+        # For each fam
+        n_fgs = df[df['fam'] == cod[0]]['n_fg'].unique()
+        last_n_fg = n_fgs[-1]
+        if n_fg != '0' and n_fg == last_n_fg:
+            data = df[df['fam'] == cod[0]]
+            write_rmsd_helper(data, n_fgs[0] + '-' + n_fgs[-1], cod, propLetters, ref_columns, out)
 
     # get total statistics
-    nMol = getNumberOfMolecules(df)
+    write_rmsd_helper(df[df['group'] == 'HAL'], '-', ['HAL'], propLetters, ref_columns, out)
+    write_rmsd_helper(df[df['group'] == 'NHB'], '-', ['NHB'], propLetters, ref_columns, out)
+    write_rmsd_helper(df[df['group'] == 'HBD'], '-', ['HBD'], propLetters, ref_columns, out)
+    write_rmsd_helper(df, '-', ['T'], propLetters, ref_columns, out)
 
-    # print('{:3} {:4}'.format('T', nMol), end=' ')
-    out.write('{:3} {:4}'.format('T', nMol))
+
+def get_ordered_family_code(map_cod_family):
+    fam_ordered = []
+    for key, value in map_cod_family.items():
+        fam = value
+        if value == 'HAL':
+            fam = key.split('_')[0]
+        if fam not in fam_ordered:
+            fam_ordered.append(fam)
+
+    nhb_group = ['ROR', 'RCOH', 'RCOR', 'RCOOR']
+    hbd_group = ['ROH', 'RCOOH', 'RN', 'RN$_2$', 'RCON']
+    return fam_ordered, nhb_group, hbd_group
+
+
+def assign_family(s,  map_cod_family, nhb_group, hbd_group):
+    cod = s['cod'][0] + '_' + s['cod'][2]
+    fam = map_cod_family[cod]
+    s['fam'] = fam
+
+    s['n_fg'] = s['cod'][2]
+    if fam == 'MIX':
+        s['n_fg'] = '0'
+
+    s['group'] = s['fam']
+    if fam in nhb_group:
+        s['group'] = 'NHB'
+    elif fam in hbd_group:
+        s['group'] = 'HBD'
+
+    if fam == 'HAL':
+        s['fam'] = s['cod'][0]
+
+    return s
+
+
+def write_rmsd_helper(data, n_fg, cod, propLetters, ref_columns, out):
+    data_non_empty = data.dropna(subset=ref_columns, how='all')
+    nMol = getNumberOfMolecules(data_non_empty)
+
+    # print('{:6} {:4}'.format(cod, nMol), end=' ')
+    out.write('{:6} {:4} {:4}'.format(cod[0], n_fg, nMol))
 
     for letter in propLetters:
-        dat = df.dropna(subset=['ref_{}'.format(letter)])
+        dat = data.dropna(subset=['ref_{}'.format(letter)])
         nData = dat.shape[0]
-        prop_avg, rmsd, aved, mad = getRmsd(letter, dat)
 
-        # print('{:6} {:6.1f} {:6.1f} {:6.1f} {:7.1f}'.format(nData, rmsd, aved, mad, prop_avg), end=' ')
-        out.write('{:6} {:6.1f} {:6.1f} {:6.1f} {:7.1f}'.format(nData, rmsd, aved, mad, prop_avg))
-    # print('')
+        if nData == 0:
+            # print('{:6} {:>6} {:>6} {:>6} {:>7}'.format(nData, '-', '-', '-', '-', '-'), end=' ')
+            out.write('{:6} {:>6} {:>6} {:>6} {:>7}'.format(nData, '-', '-', '-', '-', '-'))
+
+        else:
+            prop_avg, rmsd, aved, mad = getRmsd(letter, dat)
+
+            # print('{:6} {:6.1f} {:6.1f} {:6.1f} {:7.1f}'.format(nData, rmsd, aved, mad, prop_avg), end=' ')
+            out.write('{:6} {:6.1f} {:6.1f} {:6.1f} {:7.1f}'.format(nData, rmsd, aved, mad, prop_avg))
+
+        # print('')
     out.write('\n')
 
 

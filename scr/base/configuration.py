@@ -7,6 +7,7 @@ Classes:
 
 import numpy as np
 import sys
+import os
 
 from scr.base import ChargeDistribution
 from scr.base.matrix import Matrix

@@ -293,10 +293,10 @@ class MTB(Action):
 		lam = conf.lam
 
 		molecules_utils.computeChargeDistribution(conf.charge_distribution_method, molecules, atomTypes, kap, lam)
-		molecules_utils.computeCR(conf.cr, conf.scl_sig_NEI, conf.scl_eps_NEI, molecules, atomTypes, conf.matrix)
+		molecules_utils.computeCR(conf.cr, crPrms, conf.scl_sig_NEI, conf.scl_eps_NEI, molecules, atomTypes, conf.matrix)
 
 		# create new IFP file with N new dummy atom types.
-		newIacDict = createNewIFP.create(conf, atomTypes)
+		newIacDict = createNewIFP.create(conf, atomTypes, crPrms)
 
 		gromos_mtb.updateMTB(newIacDict, atomTypes, molecules, mtbDir, mtbGROMOSDir)
 

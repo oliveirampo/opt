@@ -67,6 +67,8 @@ def getData(it, plotConf):
                        usecols=['cod', 'frm', 'run', 'pre', 'tem', 'w_dns', 'dns_exp', 'dns_sim', 'dns_dev', 'dns_err',
                                 'dns_sim_err', 'w_hvp', 'hvp_exp', 'hvp_sim', 'hvp_dev', 'hvp_err', 'hvp_sim_err'])
 
+    data = data.loc[data['run'] == 1]
+
     data = data.replace('*', np.nan)
     data = data.where(data != 0.0, np.nan)
 
