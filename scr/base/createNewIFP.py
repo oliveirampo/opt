@@ -155,7 +155,9 @@ def getLJAtomTypes(parameters):
             newIacDict[iacIdx] = iacIdx
             minimalSetIAC.append(iacIdx)
 
-    minimalSetIAC = list(set(minimalSetIAC))
+    minimalSetIACUniq = list(set(minimalSetIAC))
+    if len(minimalSetIAC) != len(minimalSetIACUniq):
+        minimalSetIAC = minimalSetIACUniq
 
     return minimalSetIAC, newIacDict
 
@@ -306,6 +308,8 @@ def addAtomType(conf, atomTypes, N, minimalSetIAC, newIacDict, parameters, crPrm
     neiParameter = effectiveParameter.NEI()
     alpha = crPrms['alpha']['val']
 
+    updated_keys = []
+
     for i in range(0, N):
         # extend matrix of all existing atom type by 1
         for a in atomTypes:
@@ -320,19 +324,19 @@ def addAtomType(conf, atomTypes, N, minimalSetIAC, newIacDict, parameters, crPrm
         iac = parameters[symmetricIacIdx]
 
         # update IAC to its new value.
-        oldIac = newIac
-        for key in newIacDict:
-            value = newIacDict[key]
-            if value == iacIdx:
+        for key, value in newIacDict.items():
+            if (key not in updated_keys) and (value == iacIdx):
+                # print('KEY: ', key, value, newIac, iacIdx)
                 newIacDict[key] = int(newIac)
+                updated_keys.append(key)
 
         # name = iac.typ
         name = iac.nam
 
         sigi = iac.sig.cur
         epsi = iac.eps.cur
-        sigi_2 = sigi
-        epsi_2 = epsi
+        # sigi_2 = sigi
+        # epsi_2 = epsi
 
         sigij = cr.getSigma(sigi, sigi, alpha)
         epsij = cr.getEpsilon(epsi, epsi, sigi, sigi, alpha)

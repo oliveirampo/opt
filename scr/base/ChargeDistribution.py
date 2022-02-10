@@ -703,7 +703,7 @@ class Charge_group_type(ABC):
         :return: One of the classes that implements Charge_group_type.
         """
 
-        classes = {'ATOMIC': Atomic, 'HALO': Halo, 'AA-ALK': AA_Alk, 'O_N': O_N, 'MIX': Mix}
+        classes = {'ATOMIC': Atomic, 'HALO': Halo, 'AA-ALK': AA_Alk, 'O_N': O_N, 'MIX': Mix, 'P_S': PS}
 
         if n not in classes:
             raise myExceptions.ClassNotImplemented(n, 'ChargeDistribution.Charge_group_type')
@@ -1075,5 +1075,70 @@ class Mix(Charge_group_type):
             else:
                 nbs_in_CG.append(idx2)
                 atm2.used = 1
+
+        return nbs_in_CG
+
+
+class PS(Charge_group_type):
+    """Defines charge groups for P+S family.
+
+    Methods:
+    --------
+        setCG(mol):
+            Defines charge groups of molecule.
+    """
+
+    def setCG(self, mol):
+        """Defines charge groups of molecule.
+
+        :param mol: (Molecule) Molecule.
+        """
+
+        atoms = mol.atoms
+        indexes_dict = {}
+
+        for idx1 in atoms:
+            a = atoms[idx1]
+            a.used = 0
+
+        # add P/S atoms
+        for idx1 in atoms:
+            a = atoms[idx1]
+            if a.nam[0] in ['P', 'S']:
+                st_nbs = self.get_nbs(idx1, atoms, mol)
+                indexes_dict[idx1] = st_nbs
+                a.used = 1
+
+                for idx2 in st_nbs:
+                    atm2 = atoms[idx2]
+                    #if not atm2.symbol.startswith('C'):
+                    if not atm2.nam.startswith('C'):
+                        # print(atm2)
+                        nd_nbs = self.get_nbs(idx2, atoms, mol)
+                        indexes_dict[idx1].extend(nd_nbs)
+
+        indexes = []
+        for k, v in indexes_dict.items():
+            if len(v) == 0:
+                continue
+
+            idx = [k]
+            idx.extend(v)
+            indexes.append(idx)
+
+        mol.CGs = indexes
+
+    @staticmethod
+    def get_nbs(idx1, atoms, mol):
+        nbs_in_CG = []
+        nbs = mol.get_neighbors_of_atom(idx1)
+
+        for idx2 in nbs:
+            atm2 = atoms[idx2]
+            if atm2.used:
+                continue
+
+            nbs_in_CG.append(idx2)
+            atm2.used = 1
 
         return nbs_in_CG

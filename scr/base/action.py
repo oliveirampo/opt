@@ -58,7 +58,7 @@ class Action(ABC):
 	def get_choices():
 		"""Returns list of possible choices of actions."""
 
-		return ['PREP', 'GEN', 'ANA', 'OPT', 'SUB', 'PLOT', 'MTB', 'CHECK']
+		return ['PREP', 'GEN', 'ANA', 'OPT', 'SUB', 'PLOT', 'MTB', 'IFP', 'CHECK']
 
 	@staticmethod
 	def get_object(runType, it):
@@ -69,8 +69,8 @@ class Action(ABC):
 		:return: One of the classes that implements Action.
 		"""
 
-		classes = {"PREP": Prep, "GEN": Gen, "ANA": Ana, "PLOT": Plot, "SUB": Sub, "OPT": Opt, "MTB": MTB,
-				   "CHECK": Check}
+		classes = {"PREP": Prep, "GEN": Gen, "ANA": Ana, "PLOT": Plot, "SUB": Sub, "OPT": Opt,
+				   "MTB": MTB, "IFP": IFP, "CHECK": Check}
 
 		if runType not in classes:
 			raise myExceptions.ClassNotImplemented(runType, 'Action')
@@ -270,7 +270,7 @@ class MTB(Action):
 	def __init__(self, it):
 		"""Constructs all the necessary attributes for the given action.
 
-		:param it: (int) Iteration number.
+		param it: (int) Iteration number.
 		"""
 
 		Action.__init__(self, it)
@@ -299,6 +299,33 @@ class MTB(Action):
 		newIacDict = createNewIFP.create(conf, atomTypes, crPrms)
 
 		gromos_mtb.updateMTB(newIacDict, atomTypes, molecules, mtbDir, mtbGROMOSDir)
+
+
+class IFP(Action):
+	"""Extends GROMOS ifp file with dummy atoms types."""
+
+	def __init__(self, it):
+		"""Constructs all the necessary attributes for the given action.
+
+		param it: (int) Iteration number.
+		"""
+
+		Action.__init__(self, it)
+
+	def run(self, conf, molecules, atomTypes):
+		"""Reads parameters, calculates effective parameters to each molecule and updates mtb file.
+
+		:param conf: (configuration.Conf) Configuration object
+		:param molecules: (collections.OrderedDict) Ordered dictionary of molecules.
+		:param atomTypes: (collections.OrderedDict) Ordered dictionary of atom types.
+		:return:
+		"""
+
+		# molecules, atomTypes, crPrms = Action.read_extra_inp_files(conf, molecules, atomTypes)
+		crPrms = IO.readPrmCrFile(conf.prmCrFile)
+
+		# create new IFP file with N new dummy atom types.
+		_ = createNewIFP.create(conf, atomTypes, crPrms)
 
 
 class Check(Action):
